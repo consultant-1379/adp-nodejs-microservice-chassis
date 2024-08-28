@@ -1,0 +1,213 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Start Server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run start:debug",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    {
+      "name": "Serve Frontend",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run-script", "start"]
+    },
+    {
+      "name": "Launch Frontend Debugging",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:8080",
+      "runtimeArgs": ["--remote-debugging-port=9222"],
+      "webRoot": "${workspaceFolder}/frontend"
+    },
+    {
+      "name": "Start Frontend Component tests",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/frontend",
+      "console": "integratedTerminal",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run-script", "test:watch"]
+    },
+    {
+      "name": "Debug Current Frontend Component test",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:8000/?wtr-test-file=/libs/link${workspaceFolder}/${relativeFile}",
+      "runtimeArgs": ["--remote-debugging-port=9222"],
+      "pathMapping": {
+        "/libs/link${workspaceFolder}/frontend": "${workspaceFolder}/frontend",
+        "/src": "${workspaceFolder}/frontend/src"
+      }
+    },
+    {
+      "name": "WebdriverIO run current test",
+      "type": "node",
+      "request": "launch",
+      "protocol": "inspector",
+      "port": 5859,
+      "runtimeExecutable": "${workspaceRoot}/frontend/node_modules/.bin/wdio",
+      "windows": {
+        "runtimeExecutable": "${workspaceRoot}/frontend/node_modules/.bin/wdio.cmd"
+      },
+      "cwd": "${workspaceRoot}",
+      "console": "integratedTerminal",
+      "args": [
+        "frontend/test_js/config/wdio.conf.js",
+        "--selenium-standalone",
+        "--local-mockserver",
+        "--spec-reporter",
+        "--spec",
+        "${relativeFile}"
+      ],
+      "skipFiles": [],
+      "env": {
+        "DEBUG": "noBreak"
+      }
+    },
+    {
+      "name": "WebdriverIO run all tests",
+      "type": "node",
+      "request": "launch",
+      "protocol": "inspector",
+      "port": 5859,
+      "runtimeExecutable": "${workspaceRoot}/frontend/node_modules/.bin/wdio",
+      "windows": {
+        "runtimeExecutable": "${workspaceRoot}/frontend/node_modules/.bin/wdio.cmd"
+      },
+      "cwd": "${workspaceRoot}",
+      "console": "integratedTerminal",
+      "args": [
+        "frontend/test_js/config/wdio.conf.js",
+        "--selenium-standalone",
+        "--local-mockserver",
+        "--spec-reporter"
+      ],
+      "skipFiles": [],
+      "env": {
+        "DEBUG": "noBreak"
+      }
+    },
+    {
+      "name": "WebdriverIO run current integration test",
+      "type": "node",
+      "request": "launch",
+      "protocol": "inspector",
+      "port": 5859,
+      "runtimeExecutable": "${workspaceRoot}/integration-tests/node_modules/.bin/wdio",
+      "windows": {
+        "runtimeExecutable": "${workspaceRoot}/integration-tests/node_modules/.bin/wdio.cmd"
+      },
+      "cwd": "${workspaceRoot}",
+      "console": "integratedTerminal",
+      "args": [
+        "integration-tests/test/ui/config/wdio.conf.js",
+        "--selenium-standalone",
+        "--local-mockserver",
+        "--spec-reporter",
+        "--spec",
+        "${relativeFile}"
+      ],
+      "skipFiles": [],
+      "env": {
+        "DEBUG": "noBreak"
+      }
+    },
+    {
+      "name": "WebdriverIO run all integration tests",
+      "type": "node",
+      "request": "launch",
+      "protocol": "inspector",
+      "port": 5859,
+      "runtimeExecutable": "${workspaceRoot}/integration-tests/node_modules/.bin/wdio",
+      "windows": {
+        "runtimeExecutable": "${workspaceRoot}/integration-tests/node_modules/.bin/wdio.cmd"
+      },
+      "cwd": "${workspaceRoot}",
+      "console": "integratedTerminal",
+      "args": [
+        "integration-tests/test/ui/config/wdio.conf.js",
+        "--selenium-standalone",
+        "--local-mockserver",
+        "--spec-reporter"
+      ],
+      "skipFiles": [],
+      "env": {
+        "DEBUG": "noBreak"
+      }
+    },
+    {
+      "name": "Run all tests in Backend",
+      "internalConsoleOptions": "openOnSessionStart",
+      "cwd": "${workspaceFolder}/backend",
+      "program": "node_modules/mocha/bin/mocha",
+      "args": ["--loader=testdouble", "--no-timeout", "--colors", "./test/**/*.test.js"],
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      },
+      "type": "node",
+      "presentation": {
+        "hidden": false,
+        "group": "ui-tests",
+        "order": 1
+      }
+    },
+    {
+      "name": "Run current test file in Backend",
+      "cwd": "${workspaceFolder}/backend",
+      "internalConsoleOptions": "openOnSessionStart",
+      "program": "node_modules/mocha/bin/mocha",
+      "args": ["--loader=testdouble", "--no-timeout", "--colors", "${file}"],
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      },
+      "type": "node",
+      "presentation": {
+        "hidden": false,
+        "group": "ui-tests",
+        "order": 1
+      }
+    },
+    {
+      "name": "Attach to Backend in K8S",
+      "port": "${input:tiltPort}",
+      "request": "attach",
+      "skipFiles": ["<node_internals>/**"],
+      "type": "pwa-node",
+      "remoteRoot": "/runtime/server",
+      "localRoot": "${workspaceFolder}/${input:tiltLocalRoot}",
+      "presentation": {
+        "hidden": false,
+        "group": "ui-tests",
+        "order": 1
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "tiltPort",
+      "type": "pickString",
+      "description": "The port of the service",
+      "options": ["9230", "9240", "9250", "9260"],
+      "default": "9230"
+    },
+    {
+      "id": "tiltLocalRoot",
+      "type": "pickString",
+      "description": "The root of the app locally",
+      "options": ["backend"],
+      "default": "backend"
+    }
+  ]
+}

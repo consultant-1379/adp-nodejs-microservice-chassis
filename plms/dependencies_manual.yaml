@@ -1,0 +1,67 @@
+# This file contains all of the 3PPs, 2PPs, which are not scanned by FOSSA correctly,
+# or we have to create a hack because of the inconsistency between the FOSSA and BAZAAR and MUNIN.
+
+# All of these entries should be checked manually periodically, because FOSSA scan is ignored to all of them.
+# So delete or modify them in case the Chassis has another version from them, or the dependency is deleted.
+modelVersion: '3.0'
+dependencies:
+- ID: nodejs-node+18.14.2
+  bazaar:
+    bazaarurl: https://bazaar.internal.ericsson.com/b-view-component.php?componentid=1029346
+    community_link: https://github.com/nodejs/node
+    community_name: https://github.com/nodejs/node
+    community_url: https://github.com/nodejs/node
+    component_comment: ''
+    component_highlevel_description: Node.js is an open-source, cross-platform, JavaScript runtime environment.
+      It executes JavaScript code outside of a browser.
+    component_name: Node.js
+    component_platform: linux
+    component_programing_language: ''
+    component_version: 18.14.2
+    crypto: No Encryption
+    licenses:
+    - 'FAL1159008: MIT License (MIT)'
+    prim: 140/CAX1055958
+    register: 'no'
+    src_download_link: https://github.com/nodejs/node/archive/v18.14.2.tar.gz
+    stako: ESW3
+    stako_comment: Copyleft license found.
+    stako_decision_reason: manual
+    recode: ''
+    retext: ''
+    country: US
+  encryptions:
+    used:
+    - ''
+  evms:
+    product_name: Node.js
+    register: 'yes'
+    target_sw: linux
+    vendor: git
+    version: 18.14.2
+    web_url: https://github.com/nodejs/node
+  licenses:
+  - MIT
+  selected_licenses:
+  - MIT
+  name: nodejs-node
+  primary:
+  - this
+  subcomponent: false
+  type: FOSS
+  versions:
+  - 18.14.2
+  mimer:
+    product_number: CAX1055958
+    product_version_label: v18.14.2
+    linking: Not Linked
+    obligation: Including the full license text in a prominent place with the software
+      when the FOSS is distributed
+    usage: Node.js is an open-source, cross-platform, JavaScript runtime environment.
+      It executes JavaScript code outside of a browser.
+    primary: 'True'
+    selected_licenses:
+    - MIT
+  alerts:
+  - 'Manual set ''Node.js'':  stako_decision_reason: ''manual'' for stako: ''ESW3'',
+    team takes the risk!'

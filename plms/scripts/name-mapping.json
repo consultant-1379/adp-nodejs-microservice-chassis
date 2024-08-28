@@ -1,0 +1,8 @@
+{
+  "@types/connect": "types-connect",
+  "@types/http-proxy": "@types/http-proxy, DefinitelyTyped",
+  "@types/mime": "@types/mime, Definitely Types",
+  "@types/range-parser": "types-range-parser",
+  "@types/serve-static": "@types/serve-static, Definitely Typed",
+  "follow-redirects": "Follow Redirects"
+}

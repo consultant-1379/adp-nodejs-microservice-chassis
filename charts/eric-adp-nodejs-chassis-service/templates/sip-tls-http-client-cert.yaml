@@ -1,0 +1,21 @@
+apiVersion: siptls.sec.ericsson.com/v1
+kind: InternalCertificate
+metadata:
+  name: {{ include "eric-adp-nodejs-chassis-service.name" . }}-http-client-cert
+  labels:
+    {{- include "eric-adp-nodejs-chassis-service.labels" . | nindent 4 }}
+  annotations:
+    {{- include "eric-adp-nodejs-chassis-service.annotations" . | nindent 4 }}
+spec:
+  kubernetes:
+    generatedSecretName: {{ include "eric-adp-nodejs-chassis-service.name" . }}-http-client-cert
+  certificate:
+    subject:
+      cn: {{ include "eric-adp-nodejs-chassis-service.name" . }}
+    subjectAlternativeName:
+      populateKubernetesDns: false
+    issuer:
+      reference: {{ include "eric-adp-nodejs-chassis-service.name" . }}-http-client-ca
+    extendedKeyUsage:
+      tlsClientAuth: true
+      tlsServerAuth: false

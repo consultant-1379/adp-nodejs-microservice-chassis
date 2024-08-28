@@ -1,0 +1,37 @@
+{{- $global := fromJson (include "eric-adp-nodejs-chassis-service.global" .) -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "eric-adp-nodejs-chassis-service.name" . }}-http
+  labels:
+    {{- include "eric-adp-nodejs-chassis-service.labels" . | nindent 4 }}
+  annotations:
+    {{- $annotations := dict -}}
+    {{- if .Values.metrics.enabled -}}
+      {{- $_ := set $annotations "prometheus.io/scrape" "true" -}}
+      {{- $_ := set $annotations "prometheus.io/port" (.Values.service.port | toString) -}}
+      {{- $_ := set $annotations "prometheus.io/scheme" ($global.security.tls.enabled | ternary "https" "http") -}}
+    {{- end -}}
+    {{- if and $global.security.tls.enabled (not .Values.ingress.tls.passthrough) -}}
+      {{- /* Required for ICCR to work with internal TLS. But breaks passthrough */ -}}
+      {{- $_ := set $annotations "projectcontour.io/upstream-protocol.tls" (.Values.service.port | toString) -}}
+    {{- end -}}
+    {{- $commonAnn := include "eric-adp-nodejs-chassis-service.annotations" . | fromYaml -}}
+    {{- include "eric-adp-nodejs-chassis-service.mergeAnnotations" (dict "location" .Template.Name "sources" (list $annotations $commonAnn)) | trim | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  {{- if $global.internalIPFamily }}
+  ipFamilies: [{{ $global.internalIPFamily | quote }}]
+  {{- end }}
+  ports:
+    - port: {{.Values.service.port}}
+      targetPort: adp-ui-port
+      protocol: TCP
+      {{- if $global.security.tls.enabled }}
+      name: http-tls
+      {{- else }}
+      name: http
+      {{- end }}
+  selector:
+    app.kubernetes.io/name: {{ include "eric-adp-nodejs-chassis-service.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

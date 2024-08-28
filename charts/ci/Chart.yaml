@@ -1,0 +1,84 @@
+apiVersion: v2
+appVersion: 0.0.0
+description: For cluster integration testing and for future staging content
+name: ci
+version: 0.0.0
+dependencies:
+  - condition: eric-log-transformer.enabled
+    name: eric-log-transformer
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-log-transformer.enabled
+    name: eric-data-search-engine
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-sec-sip-tls.enabled
+    name: eric-sec-key-management
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-sec-sip-tls.enabled
+    name: eric-sec-sip-tls
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-sec-sip-tls.enabled
+    name: eric-data-distributed-coordinator-ed
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-pm-server.enabled
+    name: eric-pm-server
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-fh-alarm-handler.enabled
+    name: eric-data-message-bus-kf
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-fh-alarm-handler.enabled
+    name: eric-data-coordinator-zk
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-data-document-database-fault-handling.enabled
+    name: eric-data-document-database-pg
+    alias: eric-data-document-database-fault-handling
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-data-document-database-iam.enabled
+    name: eric-data-document-database-pg
+    alias: eric-data-document-database-iam
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-fh-alarm-handler.enabled
+    name: eric-fh-alarm-handler
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-sec-access-mgmt.enabled
+    name: eric-sec-access-mgmt
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+
+  - condition: eric-lm-combined-server.enabled
+    name: eric-lm-combined-server
+    repository: https://arm.sero.gic.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: 6.1.0-33
+
+  - condition: eric-lm-combined-server-db.enabled
+    name: eric-data-document-database-pg
+    repository: https://arm.rnd.ki.sw.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0
+    alias: eric-lm-combined-server-db
+
+  - condition: eric-eea-ingress-ctrl-applications.enabled
+    alias: eric-eea-ingress-ctrl-applications
+    name: eric-tm-ingress-controller-cr
+    repository: https://arm.sero.gic.ericsson.se/artifactory/proj-adp-gs-all-helm
+    version: ~0.0.0

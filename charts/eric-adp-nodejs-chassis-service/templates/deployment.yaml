@@ -1,0 +1,278 @@
+{{- $authorizationProxy := fromJson (include "eric-adp-nodejs-chassis-service.authz-proxy-values" .) -}}
+{{- $global := fromJson (include "eric-adp-nodejs-chassis-service.global" .) -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "eric-adp-nodejs-chassis-service.name" . }}
+  labels:
+{{- include "eric-adp-nodejs-chassis-service.labels" . | nindent 4 }}
+  annotations:
+{{- include "eric-adp-nodejs-chassis-service.annotations" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "eric-adp-nodejs-chassis-service.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  strategy:
+    type: {{ .Values.updateStrategy.type }}
+{{- if and (eq .Values.updateStrategy.type "RollingUpdate") .Values.updateStrategy.rollingUpdate }}
+    rollingUpdate:
+{{- if .Values.updateStrategy.rollingUpdate.maxUnavailable }}
+      maxUnavailable: {{ .Values.updateStrategy.rollingUpdate.maxUnavailable }}
+{{- end }}
+{{- if .Values.updateStrategy.rollingUpdate.maxSurge }}
+      maxSurge: {{ .Values.updateStrategy.rollingUpdate.maxSurge }}
+{{- end }}
+{{- end }}
+  template:
+    metadata:
+      labels:
+{{- include "eric-adp-nodejs-chassis-service.labels" . | nindent 8 }}
+      annotations:
+{{- include "eric-adp-nodejs-chassis-service.annotations" . | nindent 8 }}
+    spec:
+    {{- if .Values.topologySpreadConstraints }}
+      topologySpreadConstraints: {{- include "eric-adp-nodejs-chassis-service.topologySpreadConstraints" . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ include "eric-adp-nodejs-chassis-service.name" . }}-serviceaccount
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+{{- if .Values.podPriority.main.priorityClassName }}
+      priorityClassName: {{ .Values.podPriority.main.priorityClassName | quote }}
+{{- end }}
+{{- if $authorizationProxy.enabled }}
+      initContainers:
+{{ include "eric-adp-nodejs-chassis-service.authz-proxy-sap-container.spec" . | indent 6 }}
+{{- end }}
+      containers:
+{{- if $authorizationProxy.enabled }}
+{{ include "eric-adp-nodejs-chassis-service.authz-proxy-container.spec" . | indent 6 }}
+{{- end }}
+      - name: main
+        image: {{ template "eric-adp-nodejs-chassis-service.mainImagePath" . }}
+        imagePullPolicy: {{ template "eric-adp-nodejs-chassis-service.registryImagePullPolicy" . }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+              - all
+          runAsUser: 999 # this is set in the docker image
+          capabilities:
+            drop:
+              - all
+        env:
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: K8S_CONTAINER
+          value: {{ .Chart.Name }}
+        - name: K8S_POD
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: K8S_CHART_VERSION
+          value: {{ include "eric-adp-nodejs-chassis-service.chart" . | quote}}
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: KUBERNETES_SERVICE_HOST
+          value: kubernetes.default.svc
+          # Workaround for: [ADPPRG-50848]. To support ipv6 environment, using DNS name instead of IP address
+          # More info: docs/development/3pp-libraries.md
+        - name: K8S_MEMORY_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: main
+              resource: limits.memory
+        - name: TZ
+          value: {{ $global.timezone | quote }}
+        ports:
+        - name: adp-ui-port
+          containerPort: 3000
+          protocol: TCP
+        resources:
+          {{- toYaml .Values.resources.main | nindent 12 }}
+        livenessProbe:
+          {{- if and $global.security.tls.enabled (eq .Values.service.endpoints.http.tls.verifyClientCertificate "required") }}
+          exec:
+            command:
+              - /nodejs-service/probe.sh
+          {{- else }}
+          httpGet:
+            path: /status
+            port: adp-ui-port
+            {{- if $global.security.tls.enabled  }}
+            scheme: HTTPS
+            {{- end }}
+          {{- end }}
+          initialDelaySeconds: {{ .Values.probes.main.livenessProbe.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probes.main.livenessProbe.timeoutSeconds }}
+          periodSeconds: {{ .Values.probes.main.livenessProbe.periodSeconds }}
+          successThreshold: {{ .Values.probes.main.livenessProbe.successThreshold }}
+          failureThreshold: {{ .Values.probes.main.livenessProbe.failureThreshold }}
+        readinessProbe:
+          {{- if and $global.security.tls.enabled (eq .Values.service.endpoints.http.tls.verifyClientCertificate "required") }}
+          exec:
+            command:
+              - /nodejs-service/probe.sh
+          {{- else }}
+          httpGet:
+            path: /status
+            port: adp-ui-port
+            {{- if $global.security.tls.enabled }}
+            scheme: HTTPS
+            {{- end }}
+          {{- end }}
+          initialDelaySeconds: {{ .Values.probes.main.readinessProbe.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.probes.main.readinessProbe.timeoutSeconds }}
+          periodSeconds: {{ .Values.probes.main.readinessProbe.periodSeconds }}
+          successThreshold: {{ .Values.probes.main.readinessProbe.successThreshold }}
+          failureThreshold: {{ .Values.probes.main.readinessProbe.failureThreshold }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: /nodejs-service/server/config/backend-service-config
+        {{- if $global.security.tls.enabled }}
+        - name: http-client-cert-volume
+          mountPath: /nodejs-service/server/certificates/httpClient
+          readOnly: true
+        - name: http-client-ca-volume
+          mountPath: /nodejs-service/server/certificates/httpCa
+          readOnly: true
+        - name: http-server-cert-volume
+          mountPath: /nodejs-service/server/certificates/httpServer
+          readOnly: true
+        {{- if .Values.metrics.enabled }}
+        - name: pm-ca-volume
+          mountPath: /nodejs-service/server/certificates/pm
+          readOnly: true
+        {{- end }}
+        {{- if or (and .Values.ingress.enabled .Values.ingress.useContour) .Values.ingress.adpIccrCaSecret }}
+        - name: ingress-ca-volume
+          mountPath: /nodejs-service/server/certificates/ingress
+          readOnly: true
+        {{- end }}
+        - name: root-ca-volume
+          mountPath: /nodejs-service/server/certificates/root
+          readOnly: true
+        {{- if .Values.configuration.logging.syslog.enabled }}
+        - name: lt-client-cert-volume
+          mountPath: /nodejs-service/server/certificates/logtransformer
+          readOnly: true
+        {{- end }}
+        {{- if .Values.configuration.faultIndications.enabled }}
+        - name: fm-client-cert-volume
+          mountPath: /nodejs-service/server/certificates/faultHandler
+          readOnly: true
+        {{- end }}
+        {{- if .Values.configuration.loggingLicenses.enabled }}
+        - name: eric-lm-combined-server-volume
+          mountPath: /nodejs-service/server/certificates/licenseManager
+          readOnly: true
+        {{- end}}
+        {{- end}}
+      volumes:
+{{- if $authorizationProxy.enabled }}
+{{ include "eric-adp-nodejs-chassis-service.authz-proxy-volume.spec" . | indent 6 }}
+{{- end }}
+      {{- if $global.security.tls.enabled  }}
+      {{- if $authorizationProxy.enabled }}
+      - name: {{ .Values.authorizationProxy.localSpClientCertVolumeName }}
+        secret:
+          secretName: {{ include "eric-adp-nodejs-chassis-service.name" . }}-authz-client-cert
+      {{- end }}
+      - name: http-client-cert-volume
+        projected:
+          sources:
+          - secret:
+              name: {{ include "eric-adp-nodejs-chassis-service.name" . }}-http-client-cert
+      - name: http-client-ca-volume
+        projected:
+          sources:
+          - secret:
+              name: {{ include "eric-adp-nodejs-chassis-service.name" . }}-http-client-ca
+      - name: http-server-cert-volume
+        projected:
+          sources:
+          - secret:
+              name: {{ include "eric-adp-nodejs-chassis-service.name" . }}-http-server-cert
+      {{- if .Values.metrics.enabled }}
+      - name: pm-ca-volume
+        projected:
+          sources:
+          - secret:
+              name: eric-pm-server-ca
+      {{- end }}
+      {{- if or (and .Values.ingress.enabled .Values.ingress.useContour) .Values.ingress.adpIccrCaSecret }}
+      - name: ingress-ca-volume
+        projected:
+          sources:
+          - secret:
+            {{- if .Values.ingress.adpIccrCaSecret }}
+              name: {{ .Values.ingress.adpIccrCaSecret }}
+            {{- else }}
+              name: {{ .Values.ingress.adpIccrServiceName }}-client-ca
+            {{- end }}
+      {{- end }}
+      - name: root-ca-volume
+        secret:
+          secretName: eric-sec-sip-tls-trusted-root-cert
+      {{- if .Values.configuration.logging.syslog.enabled }}
+      - name: lt-client-cert-volume
+        secret:
+          secretName: {{ include "eric-adp-nodejs-chassis-service.name" . }}-lt-client-cert
+      {{- end }}
+      {{- if .Values.configuration.faultIndications.enabled }}
+      - name: fm-client-cert-volume
+        secret:
+          secretName: {{ include "eric-adp-nodejs-chassis-service.name" . }}-fi-api-client-cert
+      {{- end }}
+      {{- if .Values.configuration.loggingLicenses.enabled  }}
+      - name: eric-lm-combined-server-volume
+        secret:
+          secretName: {{ include "eric-adp-nodejs-chassis-service.name" . }}-eric-lm-combined-client-cert
+      {{- end }}
+      {{- end }}
+      - name: config-volume
+        configMap:
+          name: {{ include "eric-adp-nodejs-chassis-service.name" . }}-configmap
+      {{- if include "eric-adp-nodejs-chassis-service.pullSecrets" . }}
+      imagePullSecrets:
+        - name: {{ template "eric-adp-nodejs-chassis-service.pullSecrets" . }}
+      {{- end }}
+      {{- if include "eric-adp-nodejs-chassis-service.nodeSelector" . }}
+      nodeSelector: {{- include "eric-adp-nodejs-chassis-service.nodeSelector" . | nindent 8 }}
+      {{- end }}
+{{- if eq .Values.affinity.podAntiAffinity "hard" }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - {{ include "eric-adp-nodejs-chassis-service.name" . }}
+            topologyKey: "kubernetes.io/hostname"
+{{- else if eq .Values.affinity.podAntiAffinity  "soft" }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - {{ include "eric-adp-nodejs-chassis-service.name" . }}
+              topologyKey: "kubernetes.io/hostname"
+{{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

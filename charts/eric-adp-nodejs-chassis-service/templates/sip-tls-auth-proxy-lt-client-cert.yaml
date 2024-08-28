@@ -1,0 +1,29 @@
+{{- $authorizationProxy := fromJson (include "eric-adp-nodejs-chassis-service.authz-proxy-values" .) -}}
+{{- if $authorizationProxy.enabled }}
+  {{- $global := fromJson (include "eric-adp-nodejs-chassis-service.authz-proxy-global" .) -}}
+{{- if and ($global.security.tls.enabled) (has "applicationLevel" $global.log.outputs) -}}
+apiVersion: siptls.sec.ericsson.com/v1
+kind: InternalCertificate
+metadata:
+  name: {{ template "eric-adp-nodejs-chassis-service.authz-proxy-service-name" . }}-lt-client-cert
+  labels:
+    {{- $authProxyLabels := include "eric-adp-nodejs-chassis-service.authz-proxy-labels" . | fromYaml -}}
+    {{- $commonLabels := include "eric-adp-nodejs-chassis-service.labels" . | fromYaml -}}
+    {{- include "eric-adp-nodejs-chassis-service.mergeLabels" (dict "location" .Template.Name "sources" (list $authProxyLabels $commonLabels)) | trim | nindent 4 }}
+  annotations:
+    {{- include "eric-adp-nodejs-chassis-service.annotations" . | nindent 4 }}
+spec:
+  kubernetes:
+    generatedSecretName: {{ template "eric-adp-nodejs-chassis-service.authz-proxy-service-name" . }}-lt-client-cert
+    certificateName: clicert.pem
+    privateKeyName: cliprivkey.pem
+  certificate:
+    subject:
+      cn: {{ template "eric-adp-nodejs-chassis-service.authz-proxy-service-name" . }}-lt-client-cert
+    issuer:
+      reference: "{{ $authorizationProxy.authzLog.logtransformer.host }}-input-ca-cert"
+    extendedKeyUsage:
+      tlsServerAuth: false
+      tlsClientAuth: true
+{{- end }}
+{{- end }}

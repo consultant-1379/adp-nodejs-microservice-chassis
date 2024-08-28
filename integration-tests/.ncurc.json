@@ -1,0 +1,3 @@
+{
+  "reject": ["mochawesome-report-generator"]
+}

@@ -1,0 +1,24 @@
+{{- $global := fromJson (include "eric-adp-nodejs-chassis-service.global" .) -}}
+{{- if $global.security.tls.enabled }}
+apiVersion: siptls.sec.ericsson.com/v1
+kind: InternalCertificate
+metadata:
+  name: {{ include "eric-adp-nodejs-chassis-service.name" . }}-eric-lm-combined-client-cert
+  labels:
+  {{- include "eric-adp-nodejs-chassis-service.labels" . | nindent 4 }}
+  annotations:
+  {{- include "eric-adp-nodejs-chassis-service.annotations" . | nindent 4 }}
+spec:
+  kubernetes:
+    generatedSecretName: {{ include "eric-adp-nodejs-chassis-service.name" . }}-eric-lm-combined-client-cert
+  certificate:
+    subject:
+      cn: {{ include "eric-adp-nodejs-chassis-service.name" . }}
+    issuer:
+      reference: {{ .Values.configuration.dependencies.licenseManager.host }}-client-ca
+    subjectAlternativeName:
+      populateKubernetesDns: false
+    extendedKeyUsage:
+      tlsClientAuth: true
+      tlsServerAuth: true
+{{- end }}

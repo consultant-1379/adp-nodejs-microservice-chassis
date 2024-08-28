@@ -1,0 +1,33 @@
+modelVersion: 2.0
+import:
+  common: ../../ruleset2.0.yaml
+
+env:
+  - IMAGE_TAG (default=notset)
+
+rules:
+  # UpdateBaseOS.jenkinsfile
+  create-new-cbo-patch:
+    - task: create-modification
+      docker-image: common.adp-release-auto
+      cmd:
+        - "sed -i 's/^  - image-base-os-version: .*/  - image-base-os-version: ${env.IMAGE_TAG}/' ruleset2.0.yaml"
+        - config-handler update
+          --set-cbo-version ${env.IMAGE_TAG}
+          --product-structure plms/product_structure.yaml
+          --debug
+    - task: create-new-cbo-patch
+      docker-image: common.adp-release-auto
+      docker-flags:
+        - "--env GERRIT_USERNAME"
+        - "--env GERRIT_PASSWORD"
+      cmd: >
+        gerrit create-patch
+        --file ruleset2.0.yaml plms/product_structure.yaml
+        --message "Update Common Base OS to ${env.IMAGE_TAG}"
+        --message "Requirement: no-jira"
+        --git-repo-local .
+        --wait-label "Verified"="+1"
+        --timeout 3600
+        --debug
+        --submit

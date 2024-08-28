@@ -1,0 +1,11 @@
+nmapConfig:
+  services:
+    - name: "eric-adp-nodejs-chassis-service"
+      protocol:
+        - "tcp"
+      additionalParams:
+        - "-vv"
+        - "--stats-every 1"
+        - "-A"
+        - "-T5"
+  reportDir: ".bob/reports/nmap"

@@ -1,0 +1,41 @@
+CI:
+    ✔ Bob rules @done(20-11-11 23:37)
+    ✔ Jenkins Precodereview @done(20-11-11 23:37)
+    ✔ Document CI creation and findings @done(20-11-15 20:08)
+    ✔ Jenkins Drop @done(20-11-15 20:18)
+Packaging:
+    ✔ Docker file @done(20-11-24 22:07)
+    ☐ Helm Chart
+    ☐ Update CI pipelines
+    ☐ Enable helm chart checks
+    ☐ Document Packaging creation and findings
+UI Project:
+    ☐ Generate EUI SDK
+    ☐ Create a simple hello world
+    ☐ Testing (Selenium)
+    ☐ Document UI related findings
+Backend Project:
+    ☐ Generate project
+    ☐ Helloworld endpoint
+    ☐ Logging
+    ☐ Config
+    ☐ Testing
+    ☐ Document backend related findings
+Documentation:
+    ☐ Project structure
+    ☐ Common linting
+    ☐ Contribution
+DevEnv:
+    ☐ Tilt
+    ☐ VSCode
+    ☐ Document DevEnv
+Build Images:
+    ☐ EUI Builder
+    ☐ NodeJS Builder
+Bob help for tasks:
+    ✔ Marketplace docs @done(20-11-15 20:25)
+
+
+
+
+

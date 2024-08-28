@@ -1,0 +1,7 @@
+global:
+  security:
+    tls:
+      enabled: false
+
+ingress:
+  enabled: false

@@ -1,0 +1,78 @@
+openapi: 3.0.1
+info:
+  title: User Interface Internal API Documentation
+  description: |
+    ```
+      Ericsson   |   DocNo <DOC NUMBER>   |   Rev PA1   |   Interwork Description
+    ```
+    ## Introduction
+    This document describes the User Interface Internal REST API.
+  version: "1.0.0-alpha"
+servers:
+  - url: /internal
+    description: Base
+tags:
+  - name: IF.GUI.INTERNAL.REST
+    description: Provides access to static content meant to be used by the User Interface.
+    x-displayName: UI Internal Interface
+paths:
+  /uiConfig:
+    get:
+      operationId: getUiConfig
+      summary: API for internal configs
+      description: Endpoint to provide the current ui-config JSON to the UI. The config is constructed from the helm values.
+      tags:
+        - IF.GUI.INTERNAL.REST
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ui.deployment.config.response"
+              example:
+                logging:
+                  logLevel: "info"
+                routes:
+                  internal:
+                    prefix: "/internal"
+                    routes:
+                      config: "/uiConfig"
+                  api:
+                    prefix: "/api"
+                    routes:
+                      ticket: "/ticket"
+                      tickets: "/tickets"
+components:
+  schemas:
+    ui.deployment.config.response:
+      type: object
+      properties:
+        logging:
+          description: Settings for service logging
+          type: object
+          properties:
+            logLevel:
+              description: Full name of an UI entity. Well-known name defined during development time
+              type: string
+              enum: [debug, info, warning, error, critical]
+        routes:
+          description: Optional definition of custom API routes
+          type: object
+          properties:
+            internal:
+              description: The internal API description
+              type: object
+              properties:
+                prefix:
+                  type: string
+                routes:
+                  type: object
+            api:
+              description: The backend simple API description
+              type: object
+              properties:
+                prefix:
+                  type: string
+                routes:
+                  type: object

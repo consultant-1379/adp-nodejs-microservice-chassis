@@ -1,0 +1,248 @@
+modelVersion: 2.0
+
+properties:
+# MUST TO OVERRIDE
+  - k8-namespace:
+  - helm-chart-name: helm-chart-name
+  - image-name: image-name
+  - version: 1.0.0-0
+  - nmap-config-path: path/to/the/nmap/config
+  - zap-config-path: path/to/the/zap/config
+  - mitigation-config-path: path/to/the/mitigation/config
+# OPTIONAL TO OVERRIDE
+  - xray-scanpath-base: ARM-SEKA/docker-v2-global-eea-ci-internal-xray-local/proj-eea-ci-internal
+  - image-registry-base-path: armdocker.rnd.ericsson.se/proj-eea-ci-internal
+  - arm-report-base: https://arm.seli.gic.ericsson.se/artifactory/proj-eea-reports-generic-local
+  - image-scan-timeout: 1000
+  - xray-number-of-retries: 200
+  - report-folder: .bob/reports
+  - output-version: ${version}
+  - xray-reports: ${report-folder}/xray
+  - xray-raw-reports: ${report-folder}/xray-raw
+  - anchore-reports: ${report-folder}/anchore
+  - nmap-reports: ${report-folder}/nmap
+  - trivy-reports: ${report-folder}/trivy
+  - zap-reports: ${report-folder}/zap
+  - va-report-file: ${report-folder}/${helm-chart-name}_${version}_va-report.md
+  - va-report-file-fix: ${report-folder}/va-report.md
+  - eridoc-config-path: path/to/the/eridoc/config
+  - anchore-image: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/anchore-inline-scan:latest
+  - trivy-image: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/trivy-inline-scan:latest
+
+env:
+# MUST BE SET
+  - ARM_API_USER (default=notset)
+  - ARM_API_TOKEN (default=notset)
+  - KUBECONFIG (default=notset)
+# OPTIONAL
+  - ERIDOC_USERNAME (default=notset)
+  - ERIDOC_PASSWORD (default=notset)
+  - VHUB_TOKEN (default=notset)
+  - UPLOAD_VHUB (default=false)
+
+var:
+  - additional-va-generator-attributes
+  - va-xray-report-parameter
+  - va-xray-raw-report-parameter
+
+docker-images:
+  - adp-grype-scanner: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/va-image-scanning-grype:latest
+  - trivy: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/trivy-inline-scan:latest
+  - adp-release-auto: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/bob-adp-release-auto:latest
+  - k8-test: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/bob-py3kubehelmbuilder:latest
+
+rules:
+  anchore-scan:
+    - task: fetch-image
+      cmd: docker pull ${image-registry-base-path}/${image-name}:${version}
+    - task: create-report-folder
+      cmd: mkdir -p ${anchore-reports}
+    - task: scan
+      docker-image: adp-grype-scanner
+      docker-in-docker: socket
+      cmd: grype_scan
+           --image ${image-registry-base-path}/${image-name}:${version}
+           --report-dir ${anchore-reports}
+    - task: move-report-to-the-target
+      cmd:
+        - mv ${anchore-reports}/${image-name}_${version}-vuln.json ${anchore-reports}/${helm-chart-name}_${output-version}_${image-name}-vuln.json
+        - mv ${anchore-reports}/${image-name}_${version}-details.json ${anchore-reports}/${helm-chart-name}_${output-version}_${image-name}-details.json
+
+  xray-report:
+    - task: create-report-folder
+      cmd: mkdir -p ${xray-reports}
+    - task: create-report-raw-folder
+      cmd: mkdir -p ${xray-raw-reports}
+    - task: fetch-xray-report
+      docker-image: adp-release-auto
+      cmd: >
+          bash -c '
+          for i in {0..${xray-number-of-retries}}
+            do
+              fetch-xray --scanpath ${xray-scanpath-base}/${image-name}/${version} --user ${env.ARM_API_USER} --apikey ${env.ARM_API_TOKEN} --output ${xray-reports}/${helm-chart-name}_${output-version}_${image-name}_xray_report.json --raw-output ${xray-raw-reports}/${helm-chart-name}_${output-version}_${image-name}_raw_xray_report.json;
+              check_rc=$?;
+              if [[ $check_rc -eq 2 ]]; then
+                  echo "Report was unreachable 10 sec until retry"
+                  echo $check_rc
+                  sleep 10
+              elif [[ $check_rc -eq 1 ]]; then
+                  exit 1
+              else
+                  echo "Report is fetched. Return code:"
+                  echo $check_rc
+                  break
+              fi
+            done'
+
+  nmap-scan:
+    - task: create-report-folder
+      cmd: mkdir -p ${nmap-reports}
+    - task: scan
+      docker-image: k8-test
+      docker-flags:
+        - --network=host
+        - --env KUBECONFIG=${env.KUBECONFIG}
+        - --volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro
+      cmd: /test.py
+        --kubernetes-admin-conf=${env.KUBECONFIG}
+        --helm-user=${env.ARM_API_USER}
+        --arm-api-token=${env.ARM_API_TOKEN}
+        --kubernetes-namespace=${k8-namespace}
+        --nmap-config-file=${nmap-config-path}
+        --nmap-test
+
+  trivy-scan:
+    - task: fetch-image
+      cmd: docker pull ${image-registry-base-path}/${image-name}:${version}
+    - task: create-report-folder
+      cmd: mkdir -p ${trivy-reports}
+    - task: scan
+      docker-image: trivy
+      docker-in-docker: socket
+      cmd: --format json --output ${trivy-reports}/${helm-chart-name}_${output-version}_${image-name}_trivy_report.json --timeout $((${image-scan-timeout} /60))m0s ${image-registry-base-path}/${image-name}:${version}
+
+  zap-scan:
+    - task: create-report-folder
+      cmd: mkdir -p ${zap-reports}
+    - task: scan
+      docker-image: k8-test
+      docker-flags:
+        - --network=host
+        - --env KUBECONFIG=${env.KUBECONFIG}
+        - --volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro
+      cmd: test.py
+        --kubernetes-admin-conf=${env.KUBECONFIG}
+        --helm-user=${env.ARM_API_USER}
+        --arm-api-token=${env.ARM_API_TOKEN}
+        --kubernetes-namespace=${k8-namespace}
+        --only-zap-test
+        --zap-config=${zap-config-path}
+
+  publish-reports-to-arm:
+    - task: va-report
+      docker-image: adp-release-auto
+      cmd: upload_file.sh
+          --filename=${va-report-file}
+          --repository=${arm-report-base}/${helm-chart-name}
+          --api-token=${env.ARM_API_TOKEN}
+    - task: xray
+      docker-image: adp-release-auto
+      cmd: /bin/bash -c '
+        for f in ${xray-reports}/*.json; do
+        upload_file.sh
+        --filename=$f
+        --repository=${arm-report-base}/${helm-chart-name}
+        --api-token=${env.ARM_API_TOKEN}
+        ;done'
+    - task: anchore
+      docker-image: adp-release-auto
+      cmd: /bin/bash -c '
+        for f in ${anchore-reports}/*.json; do
+        upload_file.sh
+        --filename=$f
+        --repository=${arm-report-base}/${helm-chart-name}
+        --api-token=${env.ARM_API_TOKEN}
+        ;done'
+    - task: trivy
+      docker-image: adp-release-auto
+      cmd: /bin/bash -c '
+        for f in ${trivy-reports}/*.json; do
+        upload_file.sh
+        --filename=$f
+        --repository=${arm-report-base}/${helm-chart-name}
+        --api-token=${env.ARM_API_TOKEN}
+        ;done'
+    - task: nmap
+      docker-image: adp-release-auto
+      cmd:
+        - /bin/bash -c 'CURRENT_FOLDER=$PWD && cd ${nmap-reports}/nmap_report && tar -cvzf $CURRENT_FOLDER/${report-folder}/${helm-chart-name}_${version}_nmap_report.tgz *'
+        - upload_file.sh
+          --filename=${report-folder}/${helm-chart-name}_${version}_nmap_report.tgz
+          --repository=${arm-report-base}/${helm-chart-name}
+          --api-token=${env.ARM_API_TOKEN}
+    - task: zap
+      docker-image: adp-release-auto
+      cmd:
+        - /bin/bash -c 'CURRENT_FOLDER=$PWD && cd ${zap-reports} && tar -cvzf $CURRENT_FOLDER/${report-folder}/${helm-chart-name}_${version}_owasp_zap_report.tgz *'
+        - upload_file.sh
+          --filename=${report-folder}/${helm-chart-name}_${version}_owasp_zap_report.tgz
+          --repository=${arm-report-base}/${helm-chart-name}
+          --api-token=${env.ARM_API_TOKEN}
+
+  publish-va-report-to-eridoc:
+    - task: copy-va-report-with-fix-name-for-eridoc
+      cmd: cp ${va-report-file} ${va-report-file-fix}
+    - task: upload
+      docker-image: adp-release-auto
+      docker-flags:
+        - --env ERIDOC_USERNAME="${env.ERIDOC_USERNAME}"
+        - --env ERIDOC_PASSWORD="${env.ERIDOC_PASSWORD}"
+      cmd:
+        - eridoc upload --config ${eridoc-config-path} --no-validate-certificates
+
+  generate-upload-VA-report:
+    - task: reset-generated-paramaters
+      cmd:
+        - rm -rf .bob/var.va-xray-report-parameter
+        - rm -rf .bob/var.va-xray-raw-report-parameter
+    - task: generate-xray-parameter
+      cmd: /bin/bash -c '
+        for f in ${xray-reports}/*.json; do
+          echo " --xray-report $f " >> .bob/var.va-xray-report-parameter
+        ;done'
+    - task: generate-xray-raw-parameter
+      cmd: /bin/bash -c '
+        for f in ${xray-raw-reports}/*.json; do
+          echo " --raw-xray-report $f " >> .bob/var.va-xray-raw-report-parameter
+        ;done'
+    - task: configure-upload-vhub-switcher
+      cmd: /bin/bash -c '
+        if [[ ${env.UPLOAD_VHUB} == true ]]; then
+          echo " --upload-scan-results --vhub-api-token ${env.VHUB_TOKEN} --upload-va-config ${mitigation-config-path} " > .bob/var.additional-va-generator-attributes;
+        else
+          echo "" > .bob/var.additional-va-generator-attributes;
+        fi'
+    - task: generate
+      docker-image: adp-release-auto
+      cmd: va-report
+        --config ${mitigation-config-path}
+        --output ${va-report-file}
+        --set VERSION=${version}
+        --zap-reports ${zap-reports}
+        --anchore-reports ${anchore-reports}
+        --trivy-reports ${trivy-reports}
+        --nmap-reports ${nmap-reports}/nmap_report
+        --product-name=${helm-chart-name}
+        --version ${version}
+        --md
+        ${var.va-xray-report-parameter}
+        ${var.va-xray-raw-report-parameter}
+        ${var.additional-va-generator-attributes}
+
+  cleanup:
+    - task: remove-temporary-anchore-folder
+      cmd: rm -rf anchore-reports
+    - task: cleanup-docker-images
+      cmd:
+        - docker image rm -f ${anchore-image}
+        - docker image rm -f ${trivy-image}

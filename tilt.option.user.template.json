@@ -1,0 +1,12 @@
+{
+  "mode": "remote",
+  "kubecontext": "dev-presentation",
+  "isCiChartDeployed": false,
+  "deployIam": false,
+  "deployFm": false,
+  "deployPm": false,
+  "deployLogTransformer": false,
+  "deployMainService": true,
+  "deployIccr": true,
+  "mTLS": true
+}

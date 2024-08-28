@@ -1,0 +1,324 @@
+modelVersion: 2.0
+import:
+  common: ../../ruleset2.0.yaml
+
+properties:
+  # Helm chart repository including the release candidate build
+  - helm-chart-repo: https://arm.seli.gic.ericsson.se/artifactory/proj-eea-drop-helm
+    # Microservice released helm chart repository
+  - helm-chart-released-repo: https://arm.seli.gic.ericsson.se/artifactory/proj-eea-released-helm
+    # Released repository virtual helm repo (containing all released microservices)
+    # For a Generic Service this should be set to: https://arm.sero.gic.ericsson.se/artifactory/proj-adp-gs-released-helm/
+  - helm-chart-virtual-released-repo: https://arm.seli.gic.ericsson.se/artifactory/proj-eea-released-helm
+    # Released docker ARM repo project name
+  - image-released-proj: proj-eea-released
+    # Docker image drop path
+  - image-drop-path: armdocker.rnd.ericsson.se/${common.image-drop-repo-path}/${common.docker-image-name}
+    # Microservice released docker images
+  - image-released-name: armdocker.rnd.ericsson.se/${image-released-proj}/${common.docker-image-name}
+    # Tmp folder folder released helm chart
+  - helm-chart-released-folder: ".bob/released-charts"
+  - image-product-number: CXU1011172
+  - src-product-number: CAV1010075
+  - interface-product-number: CAF101171
+  - helm-product-number: CXD101203
+  - abstract-product-number: APR2010333
+    # ARM generic repository where the released ADP CPI Input documents are stored
+  - cpi-input-repo: https://arm.sero.gic.ericsson.se/artifactory/proj-adp-cpi-input-released-generic-local
+    # The name of the "microservice" folder in the CPI fragment repo
+  - cpi-folder-name: ${common.helm-chart-name}
+    # Full path of the released helm chart
+  - helm-chart-artifact-url: ${helm-chart-released-repo}/${common.helm-chart-name}/${var.helmchart-file-name}
+  - image-manifest-url: https://armdocker.rnd.ericsson.se/artifactory/docker-v2-global-local/${image-released-proj}/${common.docker-image-name}/${env.RELEASE_CANDIDATE}/manifest.json
+  - doc-arm-release-path: proj-cea-external-local/eric-adp-nodejs-chassis-service-release
+  - apr-product-number: APR2010333
+  - arm-structured-data-folder-path: .bob/structured-data
+  - arm-structured-data-file-name: ${common.helm-chart-name}-structured-data.json
+  - arm-structured-data-file-path: ${arm-structured-data-folder-path}/${arm-structured-data-file-name}
+  - license-json-arm-path: ${cpi-input-repo}/${cpi-folder-name}/${var.semver}
+  - marketplace-docs-arm-path: ${common.helm-chart-repo-server}/${doc-arm-release-path}
+  - required-json-arm-path: ${marketplace-docs-arm-path}/documents/${var.semver}
+  - pri-doc-number: "109 21-APR 201 0333"
+  - update-changelog-commit-message: "Automatically updating CHANGELOG.md and release_notes.md\nRequirement: no-jira"
+  - update-changelog-branch: update-changelog
+
+env:
+  # the name of branch where Git commit is merged
+  - BRANCH_NAME (default=master)
+    # the microservice release candidate version (e.g. 1.0.0-3)
+  - RELEASE_CANDIDATE(default=notset)
+    # type of release version update (e.g. MINOR, PATCH)
+  - VERSION_UPDATE (default=MINOR)
+    # the ARM functional user name for Helm repository
+  - HELM_USER
+    # the ARM functional user token for Helm repository (J-Frog ARM Token)
+  - HELM_TOKEN
+    # the EVMS username
+  - GERRIT_USERNAME
+    # the GERRIT password (Gerrit HTTP password)
+  - GERRIT_PASSWORD
+    # HELM Repository Token (a J-Frog token in ARM)
+  - DOCKER_PASSWORD
+    # Next VERSION_PREFIX value to set after PRA
+  - DRY_RUN (default=true)
+    # PRIM CREDENTIAL
+    # https://mysupport.ss.sw.ericsson.se/dwp/app/#/itemprofile/6131
+    # the ARM functional user token for artifact repository (J-Frog ARM Token)
+  - RELEASED_ARTIFACTS_REPO_API_TOKEN
+  - BUILD_USER_FIRST_NAME (default=Szeret)
+  - BUILD_USER_LAST_NAME (default=Lek)
+
+var:
+  - released-version
+  - semver
+  - helmchart-file-name
+  - commithash
+  - sha256-helm
+  - sha256-image
+  - all-document-placeholder-map
+  - dry-run-flag-generator
+  - doc-version
+
+rules:
+  # The rule cleans artifacts-properties
+  clean: common.clean
+  init:
+    - task: generate-released-version
+      cmd:
+        - echo ${env.RELEASE_CANDIDATE} | sed s/-/+/ > .bob/var.released-version
+        - cat .bob/var.released-version | cut -d '+' -f 1 > .bob/var.semver
+        # To reuse it in ruleset.yaml rules
+        - cp .bob/var.released-version .bob/var.version
+        - sed -e 's/\..*$//' .bob/var.version > .bob/var.doc-version
+    - task: helmchart-file-name
+      cmd: echo ${common.helm-chart-name}-${var.released-version}.tgz > .bob/var.helmchart-file-name
+    - task: adp-artifacts-properties
+      docker-image: common.adp-release-auto
+      cmd: generate-adp-artifacts
+        --chart-name ${common.helm-chart-name}
+        --chart-version ${var.released-version}
+        --chart-repo ${helm-chart-released-repo}
+    - task: add-build-user-name
+      cmd: echo "COMMITTER_NAME=${env.BUILD_USER_FIRST_NAME} ${env.BUILD_USER_LAST_NAME}" >> artifact.properties
+    - task: set-dry-run-flag
+      cmd: >
+        bash -c '
+        if [ "${env.DRY_RUN}" = "true" ]; then echo "--dry-run" > .bob/var.dry-run-flag-generator; else echo "" > .bob/var.dry-run-flag-generator;fi'
+
+  # Pull docker image from DROP repo and Publish in released
+  publish-released-docker-image:
+    - task: image-pull
+      cmd:
+        - docker pull ${image-drop-path}:${env.RELEASE_CANDIDATE}
+    - task: image-tag-released
+      cmd:
+        - docker tag ${image-drop-path}:${env.RELEASE_CANDIDATE} ${image-released-name}:${env.RELEASE_CANDIDATE}
+    - task: release-docker-image
+      cmd:
+        - docker push ${image-released-name}:${env.RELEASE_CANDIDATE}
+
+  # The rule fetches release candidate (e.g. 1.0.0-3) helm chart from helm-chart-repo,
+  # repackages with PRA release version (e.g. 1.0.0+3) and uploads it to released-artifacts-repo
+  publish-released-helm-chart:
+    - task: generate-release-chart
+      docker-image: common.adp-release-auto
+      cmd:
+        - mkdir -p ${helm-chart-released-folder}
+        - generate_release_helm_package
+          --repo ${helm-chart-repo}
+          --chart-name ${common.helm-chart-name}
+          --chart-version ${env.RELEASE_CANDIDATE}
+          --output ${helm-chart-released-folder}
+          --chart-released-version ${var.released-version}
+          --helm-user ${env.HELM_USER}
+          --arm-api-token ${env.HELM_TOKEN}
+          --replace ${common.image-drop-repo-path}=${image-released-proj}
+    - task: release-helm-package
+      docker-image: common.adp-release-auto
+      cmd: upload_helm_package
+        --chart-filename "${helm-chart-released-folder}/${var.helmchart-file-name}"
+        --chart-repo ${helm-chart-released-repo}
+        --helm-user ${env.HELM_USER}
+        --helm-token ${env.HELM_TOKEN}
+        --virtual-repo ${helm-chart-virtual-released-repo}
+        --dry-run ${env.DRY_RUN}
+        --skip-existing-version
+        --properties="product_metadata=${required-json-arm-path}/${arm-structured-data-file-name}"
+
+  # Create and push git tag. Example v1.0.0+55
+  create-pra-git-tag:
+    - task: git-tag
+      docker-image: common.adp-release-auto
+      docker-flags:
+        - "--env GERRIT_USERNAME"
+        - "--env GERRIT_PASSWORD"
+      cmd: version-handler create-git-tag
+        --tag v${var.released-version}
+        --message "PRA Release ${var.released-version}"
+        --git-repo-url ${common.git-clone-url}
+        --commitid ${var.commithash}
+        --dry-run ${env.DRY_RUN}
+
+  # Step version in VERSION_PREFIX (e.g. 1.0.0 -> 1.1.0)
+  increment-version-prefix:
+    - task: git-push-version-prefix-increment
+      docker-image: common.adp-release-auto
+      docker-flags:
+        - "--env GERRIT_USERNAME"
+        - "--env GERRIT_PASSWORD"
+      cmd: version-handler increment
+        --step-version-prefix ${env.VERSION_UPDATE}
+        --git-repo-url ${common.git-clone-url}
+        --branch ${env.BRANCH_NAME}
+        --dry-run ${env.DRY_RUN}
+
+  update-changelog:
+    - task: create-temp-branch
+      cmd:
+        - git pull --rebase --autostash origin ${env.BRANCH_NAME}
+        - git checkout -b ${update-changelog-branch}
+        - git reset --hard origin/${env.BRANCH_NAME}
+    - task: update-release-relative-blocks
+      docker-image: common.nodejs-builder
+      cmd:
+        - node ./scripts/updateReleaseBlocks.js
+    - task: push-changes
+      cmd:
+        - git add CHANGELOG.md docs/release/content/release_notes.md
+        - git commit -m "${update-changelog-commit-message}"
+        - git push origin HEAD:${env.BRANCH_NAME}
+    - task: switch-to-env-branch
+      cmd:
+        - git checkout ${env.BRANCH_NAME}
+        - git branch -D ${update-changelog-branch}
+
+  fetch-artifact-checksums:
+    # Get artifact hashes
+    - task: init
+      docker-image: common.adp-release-auto
+      cmd:
+        # get the hash of the git commit which is referenced by the git tag of the release candidate
+        - git rev-list -n 1 v${env.RELEASE_CANDIDATE} > .bob/var.commithash
+        - arm get-checksum --url ${helm-chart-artifact-url} --sha256 --apikey ${env.common.API_TOKEN} --output .bob/var.sha256-helm --dry-run ${env.DRY_RUN}
+        - arm get-checksum --url ${image-manifest-url} --sha256 --apikey ${env.common.DOCKER_PASSWORD} --output .bob/var.sha256-image --dry-run ${env.DRY_RUN}
+    - task: set-pri_params
+      cmd: echo "--upload --approve --generate-release-mail --checksum 'ADP Nodejs Chassis Helm'='${var.sha256-helm}' --checksum 'ADP Nodejs Chassis Image'='${var.sha256-image}'" > .bob/var.pri_params
+
+  # Set artifact URLs in PLMS
+  munin-set-artifact:
+    # Set artifact URLs
+    - task: set-artifact
+      docker-image: common.adp-release-auto
+      cmd:
+        - munin set-artifact -t ${env.common.MUNIN_TOKEN} -u ${common.git-clone-url} --vcs git --commit ${var.commithash} -p ${src-product-number} -v ${var.semver} --dry-run ${env.DRY_RUN}
+        - munin set-artifact -t ${env.common.MUNIN_TOKEN} -u ${common.git-clone-url} --vcs git --commit ${var.commithash} -p ${interface-product-number} -v ${var.semver} --dry-run ${env.DRY_RUN}
+        - munin set-artifact -t ${env.common.MUNIN_TOKEN} -u ${helm-chart-artifact-url} --sha256 ${var.sha256-helm} -p ${helm-product-number} -v ${var.semver} --dry-run ${env.DRY_RUN}
+        - munin set-artifact -t ${env.common.MUNIN_TOKEN} -u ${image-manifest-url} --sha256 ${var.sha256-image} -p ${image-product-number} -v ${var.semver} --dry-run ${env.DRY_RUN}
+
+  # Release products in PLMS
+  release-version:
+    - task: release-versions
+      docker-image: common.adp-release-auto
+      cmd:
+        - munin release-versions -t ${env.common.MUNIN_TOKEN} -c plms/product_structure.yaml -v ${var.semver} --set PRIDOC="${pri-doc-number}/${var.doc-version}" --dry-run ${env.DRY_RUN}\
+        - munin create-bookmarks -t ${env.common.MUNIN_TOKEN} -c plms/product_structure.yaml -v ${var.semver} --wait-prim-target 180 --dry-run ${env.DRY_RUN}
+
+  get-approved-document-versions:
+    - task: generate-documents-revision-list
+      docker-image: common.adp-release-auto
+      docker-flags:
+        - --env ERIDOC_USERNAME="${env.common.ERIDOC_USERNAME}"
+        - --env ERIDOC_PASSWORD="${env.common.ERIDOC_PASSWORD}"
+      cmd: munin-doc search
+        -c ${common.product-structure}
+        -docs ${common.generated-document-list}
+        -pi ${common.generated-document-list-for-pri}
+        -v ${var.semver}
+        --set PRIDOC="${pri-doc-number}/${var.doc-version}"
+        --latest-approved
+
+  # 'get-approved-document-versions' rule is a prerequisite
+  publish-marketplace-docs:
+    # SVL replacement generator deletes the folder, therefore it must be the first step
+    - task: svl-replacement
+      docker-image: common.adp-release-auto
+      cmd: doc-handler generate-svl-replacement
+        --product-number ${abstract-product-number}
+        --product-version ${var.semver}
+        --output ./build/doc-archive
+        --format html
+        --zip
+    - task: fetch-drop-documents
+      docker-image: common.adp-release-auto
+      cmd:
+        - mkdir -p ./build/doc-archive
+        - curl -H "X-JFrog-Art-Api:${env.common.API_TOKEN}" ${common.helm-chart-repo-server}/${common.doc-arm-dev-path}/drop-documents/marketplace-docs-${env.RELEASE_CANDIDATE}.zip -o ./build/marketplace-docs-${env.RELEASE_CANDIDATE}.zip
+        - unzip -q -o -d ./build/doc-archive ./build/marketplace-docs-${env.RELEASE_CANDIDATE}.zip
+    # The order is fix based on the document list in the plms/product_structure.yaml
+    # The created variable required for the marketplace placeholder replacement
+    - task: retrieve-document-data-from-pri-input
+      docker-image: common.k8-test
+      cmd: >
+        bash -c '
+        documents=(pri user-guide dev-guide risk-assessment vul-anal test-spec test-report sec-coding api);
+        rm -rf .bob/var.all-document-placeholder-map;
+        for i in ${!documents[@]}; do
+          echo \"${documents[i]}-title=$(yq read ${common.generated-document-list} "[$i].title")\" >> .bob/var.all-document-placeholder-map
+          echo \"${documents[i]}-id=$(yq read ${common.generated-document-list} "[$i].doc_number")\" >> .bob/var.all-document-placeholder-map
+          echo \"${documents[i]}-rev=$(yq read ${common.generated-document-list} "[$i].revision")\" >> .bob/var.all-document-placeholder-map
+        done;
+        tr "\n" " " < .bob/var.all-document-placeholder-map > .bob/var.tmp-all-document-placeholder-map;
+        mv .bob/var.tmp-all-document-placeholder-map .bob/var.all-document-placeholder-map'
+    - task: upload-release-marketplace-doc-to-arm
+      docker-image: common.adp-release-auto
+      cmd: marketplace upload
+        --arm-api-token ${env.common.API_TOKEN}
+        --arm-url ${marketplace-docs-arm-path}
+        --config docs/release/config/marketplace/release_upload_config.yaml
+        --dry-run ${env.DRY_RUN}
+        --refresh
+        --version ${var.semver}
+        --debug
+        --portal-token ${common.adp-marketplace-token}
+        --key-value-parameters ${var.all-document-placeholder-map}
+    - task: upload-metrics-json-to-arm
+      docker-image: common.adp-release-auto
+      cmd: pm-metrics validate
+        -f build/doc-archive/${common.pm-metric-fragment-file-name}
+        --arm-upload
+        --arm-api-token ${env.common.API_TOKEN}
+        --arm-upload-url ${required-json-arm-path}
+    - task: upload-license-agreement-json
+      docker-image: common.adp-release-auto
+      cmd: upload_file.sh
+        -f build/doc-archive/${common.license-agreement-file-name}
+        -r "${license-json-arm-path}/"
+        -t "${env.RELEASED_ARTIFACTS_REPO_API_TOKEN}"
+        --dry-run ${env.DRY_RUN}
+    - task: structure-data-generate
+      docker-image: common.adp-release-auto
+      cmd: structure-data generate
+        --service-name ${common.helm-chart-name}
+        --apr-product ${apr-product-number}
+        --foss-license-agreement ${license-json-arm-path}/${common.license-agreement-file-name}
+        --pm-metrics ${required-json-arm-path}/${common.pm-metric-fragment-file-name}
+        --output ${arm-structured-data-folder-path}
+    - task: structure-data-upload
+      docker-image: common.adp-release-auto
+      cmd: upload_file.sh
+        -f "${arm-structured-data-file-path}"
+        -r "${required-json-arm-path}/"
+        -t "${env.common.API_TOKEN}"
+        --dry-run ${env.DRY_RUN}
+
+  evms-registration:
+    - task: evms-registration
+      docker-image: common.adp-release-auto
+      cmd: dependencies register
+        --evms
+        --evms-product-name '${common.microservice-name}'
+        --evms-api-key ${env.common.EVMS_API_KEY}
+        --evms-product-version ${var.semver}
+        --dependencies ${common.dependency-full-file-name}
+        --dry-run ${env.DRY_RUN}
+        --debug

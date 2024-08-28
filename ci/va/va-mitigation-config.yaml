@@ -1,0 +1,10 @@
+product:
+  name: NodeJS Chassis Service
+  product_name: eric-adp-nodejs-chassis-service
+  version: {VERSION}
+  description: ADP NodeJs Microservice Chassis
+mitigations:
+
+  open_ports:
+    3000/tcp:
+      intended: true

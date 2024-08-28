@@ -1,0 +1,10 @@
+{
+  "modules": [
+    {
+      "name": "microservice-chassis-app",
+      "version": "1.0.0",
+      "path": "/src/apps/microservice-chassis-app",
+      "main": "microservice-chassis-app.js"
+    }
+  ]
+}

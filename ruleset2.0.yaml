@@ -1,0 +1,1131 @@
+modelVersion: 2.0
+
+# ----------- Builder images
+docker-images:
+  - adp-helm-dr-check: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/common-library-adp-helm-dr-check:latest
+  - adp-release-auto: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/bob-adp-release-auto:latest
+  - ci-toolbox: armdocker.rnd.ericsson.se/proj-eea-ci-internal/ci-toolbox:latest
+  - docbuilder: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/bob-docbuilder:latest
+  - k8-test: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/bob-py3kubehelmbuilder:latest
+  - nodejs-builder: armdocker.rnd.ericsson.se/proj-adp-cicd-drop/adp-nodejs-lts-builder-image:18.14.2-0
+
+# ----------- Bob Variables, Properties and Environment variables
+var:
+  - version
+  - image-full-name-internal
+  - rstate
+  - commithash
+  - image-repo-path-internal
+  - helm-chart-repo-internal
+  - helm-image-dr-vm-args
+  - test-base-url
+  - branch
+  - ingress-hostname
+  - ingress-iccr-ip
+  - ingress-iccr-path
+  - ingress-protocol
+  - semver
+  - kubernetes-version
+  - helm-version
+  - docker-image-size
+  - install-start-time
+  - install-finish-time
+  - run-type
+  - pri_params
+  - doc-version
+  - fossa-id
+  - additional-chart-values
+  - additional-chart-values-file
+  - token
+  - rnd-token
+
+properties:
+  - docker-image-name: eric-adp-nodejs-chassis-service
+  - helm-chart-name: eric-adp-nodejs-chassis-service
+  - product-number: CXU 000 0000
+  - image-title: "ADP NodeJS Chassis Service"
+  - microservice-name: "ADP NodeJS Chassis Service"
+  - jira-component-name: "NodeJS Chassis"
+  - image-registry: ${env.DOCKER_REGISTRY}
+  - image-dev-repo-path: proj-eea-dev
+  - image-ci-repo-path: proj-eea-ci-internal
+  - image-drop-repo-path: proj-eea-drop
+  - image-full-name: ${image-registry}/${image-drop-repo-path}/${docker-image-name}
+  - image-base-os-version: "6.0.0-18"
+  - helm-chart-repo-server: ${env.HELM_CHART_ARTIFACTORY}/artifactory
+  - helm-chart-dev-repo-path: proj-eea-dev-helm
+  - helm-chart-ci-repo-path: proj-eea-ci-internal-helm
+  - helm-chart-drop-repo-path: proj-eea-drop-helm
+  - helm-chart-drop-repo: ${helm-chart-repo-server}/${helm-chart-drop-repo-path}
+  - helm-chart-file-name: ${helm-chart-name}-${var.version}.tgz
+  - k8-namespace: ${env.BUILD_TAG}
+  - system-test-from-version: 1.0.0-0 #TODO: find out this version automatically
+  - image-pullsecret: arm-pullsecret
+  - sonar-report-file: report-task.txt
+  - repositories-yaml-path: .bob/repositories.yaml
+  - doc-arm-dev-path: proj-cea-external-local/eric-adp-nodejs-chassis-service
+  - adp-marketplace-token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtc2lkIjoiNjE2ZDcxOGMyNTcxYTYwMDk4Mjg0YmY5IiwiaW52YWxfc2VjcmV0IjoiZHJoeWpxajFlcSJ9.bagCDDnAQ7PZjIYpV4eopBewP6FZtuoOiLJoGdSjurk
+  - marketplace-stylesheet: /usr/share/marketplace/resources/pdf_style.css
+  - sonar-host-url: ${env.SONAR_HOST}
+  - fossa-team-name: BDGS-EEA-RelHandl
+  - fossa-project-name: fossa-eric-adp-nodejs-chassis
+  - fossa-server-endpoint: https://scasfossa.internal.ericsson.com
+  - fossa-report-name: .bob/fossa-report.json
+  - auto-dependency-file-name: plms/dependencies_foss_auto.yaml
+  - manual-dependency-file-name: plms/dependencies_manual.yaml
+  - dependency-full-file-name: .bob/dependency_merged_full.yaml
+  - bazaar-svl-id: 11986
+  - report-directory: .bob/reports
+  - dependencies-report-html: ${report-directory}/dependencies-report.html
+  - product-structure: plms/product_structure.yaml
+  - generated-document-list: .bob/documents.yaml
+  - generated-document-list-for-pri: .bob/documents-pri.json
+  - munin-sync-status-directory: .bob/munin-sync-status-files
+  - metadata-docs-folder: docs/release/metadata
+  - pm-metric-fragment-file-name: ${helm-chart-name}_pm_metrics.json
+  - license-agreement-file-name: license.agreement.json
+  - license-agreement-path: ${metadata-docs-folder}/${license-agreement-file-name}
+  - manual-license-agreement-file-name: plms/manual.license.agreement.json
+  - gerrit-url: https://gerrit.ericsson.se/a/plugins/gitiles/EEA/adp-nodejs-microservice-chassis
+  - git-clone-url: https://gerrit.ericsson.se/EEA/adp-nodejs-microservice-chassis.git
+  - pri-eridoc-folder-id: 0b004cffc943bc32
+  - pri-manual-json: plms/pri_manual_input.json
+  - pri-config-extra: plms/config_adpprg.json
+  - pri-param: ""
+  - pri-doc-number: "109 21-APR 201 0333"
+  - arm-auth-url: ${helm-chart-repo-server}/api/npm/auth
+  - rnd-arm-auth-url: https://arm.rnd.ki.sw.ericsson.se/artifactory/api/npm/auth
+
+  # Values.yaml files
+  - drop-chart-values: ci/config/drop-chart-values.yaml
+  - pcr-chart-values: ci/config/pcr-chart-values.yaml
+
+env:
+  - PWD
+  - DOCKER_REGISTRY (default=armdocker.rnd.ericsson.se)
+  - HELM_CHART_ARTIFACTORY (default=https://arm.seli.gic.ericsson.se)
+  - HELM_USER  (default=notset) # Have to be set before run
+  - API_TOKEN  (default=notset) # Have to be set before run
+  - API_TOKEN_ADP  (default=notset) # Have to be set before run
+  - KUBECONFIG (default=notset) # Have to be set before run
+  - USER
+  - BUILD_TAG (default=proj-eea-app-local)
+  - DOCKER_USERNAME (default=test)
+  - DOCKER_PASSWORD (default=test)
+  - DEFAULT_DOCKER_FLAGS (default=--init --rm --user $(id -u):$(id -g) --label $(echo ${BUILD_TAG:-proj-eea-app-local}))
+  - TEST_BASE_URL (default=host.docker.internal:14444)
+  - SONAR_HOST (default=https://sonarqube.lmera.ericsson.se/)
+  - SONAR_LOGIN_TOKEN (default=notset) # Have to be set before run
+  - FOSSA_API_KEY (default=notset) # Have to be set before run
+  - BAZAAR_USER (default=notset) # Have to be set before run
+  - BAZAAR_TOKEN (default=notset) # Have to be set before run
+  - EVMS_API_KEY (default=notset)
+  - MUNIN_TOKEN (default=notset)
+  - ERIDOC_USERNAME (default=notset)
+  - ERIDOC_PASSWORD (default=notset)
+  - DRY_RUN (default=false)
+
+# ----------- Rules
+rules:
+  local-pipeline:
+    - rule: clean
+    - rule: init-dev
+    - rule: npm-install
+    - rule: lint
+    - rule: generate-docs
+    - rule: build-ui
+    - rule: run-selenium-tests
+    - rule: test-ui
+    - rule: test-ws
+    - rule: sonar-scanner
+    - rule: image
+    - rule: eridoc-dryrun
+    - rule: eridoc-upload
+    - rule: eridoc-approve
+
+  clean:
+    - task: rm
+      cmd:
+        - rm -rf .bob/
+        - rm -rf build/
+
+  generate-npm-token:
+    - task: generate-npm-token
+      cmd:
+        - echo $(curl --user ${env.HELM_USER}:${env.API_TOKEN} ${arm-auth-url} | xargs | cut -d" " -f3) > .bob/var.token
+        - echo $(curl --user ${env.HELM_USER}:${env.API_TOKEN_ADP} ${rnd-arm-auth-url} | xargs | cut -d" " -f3) > .bob/var.rnd-token
+
+  npm-install:
+    - task: npm
+      docker-image: nodejs-builder
+      docker-flags:
+        - "--env NODE_ENV=" # Unset production flag
+        - "--env ARM_NPM_TOKEN=${var.token}"
+        - "--env RND_ARM_NPM_TOKEN=${var.rnd-token}"
+      cmd:
+        - npm run ci:all
+
+  lint:
+    # TODO: documentation specific lint
+    - task: commit-msg-lint
+      docker-image: nodejs-builder
+      cmd:
+        - node git-hooks/commit-msg.d/smi-commit-msg.js "$(git log --format=%B -n1)" || echo "Please install the validator git hook!"
+    - task: helm
+      docker-image: adp-release-auto
+      cmd: helm lint charts/${helm-chart-name}
+    - task: helm-chart-check
+      docker-image: adp-helm-dr-check
+      cmd: helm-dr-check
+        --helm-chart charts/${helm-chart-name}
+        --output .bob/check-charts/
+        --helm-v3
+    - task: markdownlint
+      docker-image: nodejs-builder
+      cmd:
+        # npm run lint:markdownlint does not work as the glob does not mach any md file in this env
+        - node_modules/.bin/markdownlint $(git ls-files -- \*\.md | cat | xargs)
+    - task: vale
+      docker-image: docbuilder
+      cmd:
+        - >
+          bash -c '
+          vale $(git ls-files -- \*\.md ":!:*fragment.md" | cat | xargs);
+
+          if [ $? -ne 0 ]; then
+            echo "Linting error (Vale): there are spelling errors"
+            exit 1
+          fi'
+    - task: jslint
+      docker-image: nodejs-builder
+      cmd:
+        - npm run lint:js
+        - npm run lint:frontend
+        - npm run lint:server
+        - npm run lint:package-lock
+
+  generate-metrics-doc:
+    - task: validate-metrics-json
+      docker-image: adp-release-auto
+      cmd: pm-metrics validate -d
+        -f ${metadata-docs-folder}/${pm-metric-fragment-file-name}
+    - task: generate-doc
+      docker-image: adp-release-auto
+      cmd: pm-metrics generate-markdown -d
+        --json ${metadata-docs-folder}/${pm-metric-fragment-file-name}
+        --output docs/release/content/fragments/pm_metrics_fragment.md
+
+  generate-api-specs:
+    - task: generate
+      docker-image: nodejs-builder
+      cmd: npm run generateApiDocs
+
+  generate-docs:
+    - rule: generate-metrics-doc
+    - rule: generate-api-specs
+    - task: generate-marketplace-doc-zip
+      docker-image: adp-release-auto
+      cmd: doc-handler generate --config docs/release/config/marketplace/marketplace_config.yaml
+        --output ./build/doc-archive
+        --format html
+        --zip
+    - task: generate-html-zip
+      docker-image: adp-release-auto
+      cmd: doc-handler generate --config docs/release/config/marketplace/marketplace_config.yaml
+        --output ./build/doc-archive/html
+        --format html
+        --zip
+    - task: generate-pdf
+      docker-image: adp-release-auto
+      cmd: doc-handler generate --config docs/release/config/marketplace/marketplace_config.yaml
+        --output ./build/doc-archive/pdf
+        --format pdf
+        --stylesheet ${marketplace-stylesheet}
+    - rule: create-test-report
+
+  generate-pri:
+    - task: generate-pri
+      docker-image: adp-release-auto
+      docker-flags:
+        - "--env PRODUCT_RELEASE_NUMBER='${var.version}'"
+        - "--env GERRIT_USERNAME"
+        - "--env GERRIT_PASSWORD"
+        - "--env JIRA_API_TOKEN"
+        - "--env ERIDOC_USERNAME"
+        - "--env ERIDOC_PASSWORD"
+        - "--env FOLDER_ID=${pri-eridoc-folder-id}"
+        - "--env JIRA_COMPONENT_LONG_NAME='${jira-component-name}'"
+        - "--env GERRIT_URL=${gerrit-url}"
+        - "--env DPRAF_REPORT_JSON=${generated-document-list-for-pri}"
+        - "--env DOCUMENTS_YAML=${generated-document-list}"
+        - "--env PRI_MANUAL_JSON=${pri-manual-json}"
+        - "--env PRI_CONFIG_EXTRA=${pri-config-extra}"
+      cmd: pri.py
+        --debug
+        --template-version 1.8
+        --mimer
+        --dry-run ${env.DRY_RUN}
+        ${var.pri_params}
+
+  publish-docs:
+    - task: upload-marketplace-doc-to-arm
+      docker-image: adp-release-auto
+      cmd: marketplace upload
+        --arm-api-token ${env.API_TOKEN}
+        --arm-url ${helm-chart-repo-server}/${doc-arm-dev-path}
+        --config docs/release/config/marketplace/marketplace_upload_config.yaml
+        --dev
+        --refresh
+        --portal-token ${adp-marketplace-token}
+    - task: upload-metrics-json
+      docker-image: adp-release-auto
+      cmd: pm-metrics validate
+        -f ${metadata-docs-folder}/${pm-metric-fragment-file-name}
+        --arm-upload
+        --arm-api-token ${env.API_TOKEN}
+        --arm-upload-url ${helm-chart-repo-server}/${doc-arm-dev-path}/documents/
+    - task: zip-all-marketplace-documents
+      docker-image: adp-release-auto
+      cmd:
+        - cp docs/release/config/marketplace/marketplace_upload_config.yaml ./build/doc-archive
+        - cp -a ${metadata-docs-folder}/. ./build/doc-archive
+        - >
+          bash -c '
+          cd build/doc-archive;
+          zip -q -r ./../marketplace-docs-${var.version}.zip .;
+          '
+    - task: upload-zip-documents-to-artifactory
+      docker-image: adp-release-auto
+      cmd: upload_file.sh
+        --filename=./build/marketplace-docs-${var.version}.zip
+        --repository=${helm-chart-repo-server}/${doc-arm-dev-path}/drop-documents/
+        --api-token=${env.API_TOKEN}
+
+  create-test-report:
+    - task: fill-ejs-template
+      docker-image: nodejs-builder
+      cmd:
+        - mkdir -p ./build/doc-archive/test-report/final
+        - node node_modules/ejs/bin/cli.js docs/release/content/test-report-template.ejs.md
+          kubernetesVersion=${var.kubernetes-version}
+          helmVersion=${var.helm-version}
+          dockerImageName=${var.image-full-name-internal}
+          dockerImageTag=${var.version}
+          dockerImageSize=${var.docker-image-size}
+          installStartTime=${var.install-start-time}
+          installFinishTime=${var.install-finish-time}
+          -o ./build/doc-archive/test-report/test-report.md
+    - task: convert-to-pdf
+      docker-image: adp-release-auto
+      cmd:
+        - "echo 'documents:' > ./build/doc-archive/test-report/cfg.yaml"
+        - "echo '  - name: test-report' >> ./build/doc-archive/test-report/cfg.yaml"
+        - "echo '    files:' >> ./build/doc-archive/test-report/cfg.yaml"
+        - "echo '      - ./test-report.md' >> ./build/doc-archive/test-report/cfg.yaml"
+        - doc-handler generate --config ./build/doc-archive/test-report/cfg.yaml
+          --output ./build/doc-archive/test-report/pdf
+          --format pdf
+          --stylesheet ${marketplace-stylesheet}
+    - task: archive-reports
+      docker-image: adp-release-auto
+      cmd:
+        - cp ./build/doc-archive/test-report/pdf/test-report/test-report.pdf ./build/doc-archive/test-report/final
+        - cp -r backend/test/reports/mochawesome ./build/doc-archive/test-report/final/ws-test-report
+        - cp -r backend/test/reports/coverage/lcov-report ./build/doc-archive/test-report/final/ws-test-coverage-report
+        - cp -r frontend/testReport ./build/doc-archive/test-report/final/gui-test-report
+        - cp -r frontend/coverage/lcov-report ./build/doc-archive/test-report/final/gui-test-coverage-report
+        - cp -r frontend/test_js/allure-report ./build/doc-archive/test-report/final/gui-selenium-test-report
+        - >
+          bash -c '
+            if [ ${var.run-type} != "precodereview" ]; then
+              cp -r integration-tests/test/backend/reports/mochawesome ./build/doc-archive/test-report/final/ws-integration-report
+              cp -r integration-tests/test/ui/allure-report ./build/doc-archive/test-report/final/ui-integration-report
+            else
+              exit 0
+            fi
+          '
+        - >
+          bash -c '
+          cd build/doc-archive/test-report/final;
+          zip -q -r ./../../test-report.zip .;
+          '
+
+  test-common:
+    - task: remove-containers
+      cmd: docker-compose --file ${docker-compose-path} rm -f
+
+  docker-common:
+    - task: docker-login
+      cmd: echo ${env.DOCKER_PASSWORD} | docker login ${image-registry} -u ${env.DOCKER_USERNAME} --password-stdin
+
+  test-ws:
+    - rule: docker-common
+    - task: test-in-builder-image
+      docker-image: nodejs-builder
+      cmd:
+        - npm run test:server
+
+  test-ui:
+    - rule: docker-common
+    - task: test-frontend-in-builder-image
+      docker-image: nodejs-builder
+      docker-flags:
+        - "--shm-size=2g"
+        - "--env PLAYWRIGHT_BROWSERS_PATH=${PWD#}/.bob/ms-playwright"
+      cmd:
+        - npm run test:frontend
+
+  build-ui:
+    - rule: docker-common
+    - task: build
+      docker-image: nodejs-builder
+      cmd:
+        - npm run build:frontend
+
+  generate-ci-chart:
+    - task: prepare-repositories-yaml
+      cmd:
+        - mkdir -p .bob
+        - cp repositories.yaml.template ${repositories-yaml-path}
+        - sed -i "s/USERNAME/${env.HELM_USER}/" ${repositories-yaml-path}
+        - sed -i "s/API_TOKEN_ADP/${env.API_TOKEN_ADP}/" ${repositories-yaml-path}
+        - sed -i "s/API_TOKEN_EEA/${env.API_TOKEN}/" ${repositories-yaml-path}
+    - task: copy-ci-base
+      cmd: cp -r charts/ci .bob/ci-extended-chart
+    - task: create-and-fetch-subcharts
+      docker-image: adp-release-auto
+      docker-flags:
+        - "--env ENABLE_HELM_V3=true"
+      cmd: helm-package
+        --folder .bob/ci-extended-chart
+        --workdir .bob
+        --output .bob
+        --version 0.0.0
+        --helm-credentials ${repositories-yaml-path}
+
+  run-selenium-tests:
+    - rule: docker-common
+    - task: start-selenium-tests
+      cmd: docker-compose
+        --file docker/selenium-docker-compose.yml
+        up
+        --abort-on-container-exit
+    - task: remove-containers
+      cmd: docker-compose --file docker/selenium-docker-compose.yml rm -f
+
+  k8s-test-pcr:
+    - rule: set-chart-values-pcr
+    - rule: k8-cluster-prepare
+    - rule: service-install-test
+    - rule: namespace-cleanup
+
+  k8s-test-drop:
+    - task: convert-iccr-path # contour rewrite does not support - so need to replace with _ in the path string
+      cmd: echo "${k8-namespace}" | sed -r 's/-/_/g' > .bob/var.ingress-iccr-path
+    - rule: install-ci
+    - rule: set-chart-values-drop
+    - rule: install-chassis
+    - task: system-scale-down
+      docker-image: k8-test
+      docker-flags:
+        - "--network=host"
+        - "--env KUBECONFIG=${env.KUBECONFIG}"
+        - "--volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro"
+        - "--volume ${env.PWD}:${env.PWD}"
+      cmd: >
+        /bin/bash -c '
+        kubectl scale deployment ${helm-chart-name} -n ${k8-namespace} --replicas=1;
+        kubectl rollout status --watch --timeout=1800s -n ${k8-namespace} deployment ${helm-chart-name} || exit 1;
+        '
+    - task: wait-for-domain-apps-to-be-discovered
+      docker-image: nodejs-builder
+      cmd: node ci/scripts/service-checker.js ${var.ingress-hostname} ${var.ingress-iccr-path} ${var.ingress-protocol}
+    - rule: integration-tests-in-cluster
+    - rule: namespace-cleanup
+
+  set-chart-values-pcr:
+    - task: set-additional-values
+      cmd: echo "global.pullSecret=${image-pullsecret}" > .bob/var.additional-chart-values
+    - task: set-additional-values-file
+      cmd: echo "${pcr-chart-values}" > .bob/var.additional-chart-values-file
+
+  set-chart-values-drop:
+    - task: get-from-k8s
+      docker-image: k8-test
+      docker-flags:
+        - "--network=host"
+        - "--env KUBECONFIG=${env.KUBECONFIG}"
+        - "--volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro"
+        - "--volume ${env.PWD}:${env.PWD}"
+      cmd:
+        - kubectl get service -n ${k8-namespace} -o=jsonpath='{.items[?(@.spec.type == "LoadBalancer")].status.loadBalancer.ingress[0].ip}' > .bob/var.ingress-iccr-ip
+        - echo ci.chassis.${var.ingress-iccr-ip}.nip.io > .bob/var.ingress-hostname
+    - task: get-ingress-protocol
+      cmd: echo "https" > .bob/var.ingress-protocol
+    - task: set-additional-values
+      cmd: echo "global.pullSecret=${image-pullsecret},ingress.hostname=${var.ingress-hostname},ingress.path=/${k8-namespace}" > .bob/var.additional-chart-values
+    - task: set-additional-values-file
+      cmd: echo "${drop-chart-values}" > .bob/var.additional-chart-values-file
+
+  install-chassis:
+    - task: save-install-start-time
+      cmd:
+        - date "+%s" > .bob/var.install-start-time
+    - rule: service-install-test
+    - task: save-install-finish-time
+      cmd:
+        - date "+%s" > .bob/var.install-finish-time
+
+  integration-tests-in-cluster:
+    - task: start-kubernetes-backend-integration-tests
+      docker-image: nodejs-builder
+      docker-flags:
+        - "--env KUBERNETES_MASTER_NODE=${var.ingress-hostname}"
+        - "--env SERVICE_PATH=/${var.ingress-iccr-path}"
+      cmd:
+        - npm run test:backend:integration
+    - task: start-kubernetes-frontend-integration-tests
+      cmd: "export KUBERNETES_MASTER_NODE=${var.ingress-hostname} && \
+        export SERVICE_PATH=/${var.ingress-iccr-path} && \
+        docker-compose
+        --file integration-tests/docker/selenium-docker-compose.yml
+        up
+        --abort-on-container-exit"
+    - task: test-common:remove-containers
+      properties:
+        - docker-compose-path: integration-tests/docker/selenium-docker-compose.yml
+
+  install-ci:
+    - rule: generate-ci-chart
+    - rule: k8-cluster-prepare
+    - task: install
+      docker-image: k8-test
+      docker-flags:
+        - "--network=host"
+        - "--env KUBECONFIG=${env.KUBECONFIG}"
+        - "--volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro"
+        - "--volume ${env.PWD}:${env.PWD}"
+      cmd: "helm upgrade --install adp-chassis-dependencies .bob/ci-0.0.0.tgz \
+        --namespace ${k8-namespace} \
+        --wait \
+        --timeout 10m0s \
+        --set global.pullSecret=${image-pullsecret}"
+
+  image:
+    - task: docker-build-image
+      cmd: DOCKER_BUILDKIT=1 docker build ${PWD#}
+        --file docker/Dockerfile
+        --secret id=arm_npm_token,src=.bob/var.token
+        --secret id=rnd_arm_npm_token,src=.bob/var.rnd-token
+        --secret id=arm_user,env=HELM_USER
+        --secret id=arm_pwd,env=API_TOKEN
+        --tag ${var.image-full-name-internal}:${var.version}
+        --build-arg BASE_OS_VERSION=${image-base-os-version}
+        --label com.ericsson.product-number="${product-number}"
+        --label com.ericsson.product-revision=${var.rstate}
+        --label org.opencontainers.image.title="${image-title}"
+        --label org.opencontainers.image.created=`date -u +%FT%TZ`
+        --label org.opencontainers.image.revision=${var.commithash}
+        --label org.opencontainers.image.vendor="Ericsson"
+        --label org.opencontainers.image.version=${var.version}
+    - task: save-image-size
+      cmd: docker image inspect ${var.image-full-name-internal}:${var.version} -f '{{.Size}}' | numfmt --to=si > .bob/var.docker-image-size
+
+  package-local:
+    - task: image-push-internal
+      cmd: docker push ${var.image-full-name-internal}:${var.version}
+    - task: package-helm-internal
+      docker-image: adp-release-auto
+      docker-flags:
+        - "--env HELM_USER"
+        - "--env HELM_TOKEN=${env.API_TOKEN}"
+        - "--env ENABLE_HELM_V3=true"
+      cmd: helm-package
+        --folder charts/${helm-chart-name}
+        --workdir .bob
+        --output .bob/${helm-chart-name}-internal
+        --version ${var.version}
+        --replace eric-product-info.yaml:VERSION=${var.version}
+        --replace RSTATE=${var.rstate}
+        --replace eric-product-info.yaml:REPO_PATH=${var.image-repo-path-internal}
+        --replace eric-product-info.yaml:IMAGE_NAME=${docker-image-name}
+
+  package:
+    - rule: package-local
+    - task: helm-chart-and-image-check
+      docker-image: adp-helm-dr-check
+      cmd: helm-dr-check ${var.helm-image-dr-vm-args}
+        -Dimagedrck.docker.registry.user=${env.DOCKER_USERNAME}
+        -Dimagedrck.docker.registry.token=${env.DOCKER_PASSWORD}
+        --helm-chart .bob/${helm-chart-name}-internal/${helm-chart-file-name}
+        --image-dr-check-flag=true
+        --output .bob/check-image/
+        --helm-v3
+    - task: helm-upload-internal
+      docker-image: adp-release-auto
+      cmd: upload_file.sh
+        --filename=.bob/${helm-chart-name}-internal/${helm-chart-file-name}
+        --repository=${var.helm-chart-repo-internal}/${helm-chart-name}
+        --api-token=${env.API_TOKEN}
+
+  service-install-test:
+    - rule: get-versions
+    - task: system-test
+      docker-image: k8-test
+      docker-flags:
+        - "--network=host"
+        - "--env KUBECONFIG=${env.KUBECONFIG}"
+        - "--volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro"
+        - "--volume ${env.PWD}:${env.PWD}"
+      cmd: test.py --helm-v3 --kubernetes-admin-conf=${env.KUBECONFIG}
+        --helm-user=${env.HELM_USER}
+        --arm-api-token=${env.API_TOKEN}
+        --kubernetes-namespace=${k8-namespace}
+        --chart-archive=.bob/${helm-chart-name}-internal/${helm-chart-file-name}
+        --helm-repo=${helm-chart-drop-repo}
+        --docker-server=${image-registry}
+        --docker-username=${env.DOCKER_USERNAME}
+        --docker-password=${env.DOCKER_PASSWORD}
+        --secret-name=${image-pullsecret}
+        --helm_variables="${var.additional-chart-values}"
+        --helm_value_file="${var.additional-chart-values-file}"
+        --skip-upgrade-test
+        --baseline_chart_version=${system-test-from-version}
+        --helm-timeout=600
+        --skip-cleanup
+        --ignore-cleanup
+
+  namespace-cleanup:
+    - task: kubernetes-namespace-clean
+      docker-image: k8-test
+      docker-flags:
+        - "--network=host"
+        - "--env KUBECONFIG=${env.KUBECONFIG}"
+        - "--volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro"
+        - "--volume ${env.PWD}:${env.PWD}"
+      cmd:
+        - kubectl delete namespace ${k8-namespace}
+
+  get-versions:
+    - task: get-environment-versions
+      docker-image: k8-test
+      docker-flags:
+        - "--network=host"
+        - "--env KUBECONFIG=${env.KUBECONFIG}"
+        - "--volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro"
+        - "--volume ${env.PWD}:${env.PWD}"
+      cmd:
+        - kubectl version --short | grep "Server Version" | sed -e 's#.*v\(\)#\1#' > .bob/var.kubernetes-version
+        - helm version --short > .bob/var.helm-version
+
+  sonar-scanner:
+    - task: scan
+      docker-image: nodejs-builder
+      docker-flags:
+        - "--env SONAR_SCANNER_OPTS='-Djavax.net.ssl.trustStore=/usr/lib64/jvm/java-11-openjdk-11/lib/security/cacerts'"
+      cmd:
+        - npm run sonar-scanner:frontend -- -- -Dsonar.host.url=${sonar-host-url} -Dsonar.login=${env.SONAR_LOGIN_TOKEN}
+        - npm run sonar-scanner:server -- -- -Dsonar.host.url=${sonar-host-url} -Dsonar.login=${env.SONAR_LOGIN_TOKEN}
+
+  sonar-gate-check:
+    - task: sonar-quality-gate-check
+      docker-image: ci-toolbox
+      cmd:
+        - sonarQualityCheck frontend/.scannerwork/${sonar-report-file} ${env.SONAR_LOGIN_TOKEN}
+        - sonarQualityCheck backend/.scannerwork/${sonar-report-file} ${env.SONAR_LOGIN_TOKEN}
+
+  ruleset-validation-helper:
+    - task: validate-rules
+      cmd:
+        - git diff HEAD^ --name-only | grep -oE '^ruleset.*\.yaml$|ci/rulesets/.*\.yaml' | wc -l
+
+  # ----------- Init tasks
+  # Set the variable values
+  init-dev:
+    - task: version
+      docker-image: adp-release-auto
+      cmd:
+        - version-handler generate
+          --is-release false
+          --output version
+          --git-repo-path ./
+          --version-prefix-file "VERSION_PREFIX"
+        - sed -e 's@-.*$@@' .bob/var.version > .bob/var.semver
+        - sed -e 's/\..*$//' .bob/var.version > .bob/var.doc-version
+    - task: rstate
+      docker-image: adp-release-auto
+      cmd: get_rstate.py ${var.version} > .bob/var.rstate
+    - task: commit
+      docker-image: adp-release-auto
+      cmd: git rev-parse --short HEAD > .bob/var.commithash
+    - task: image-repo-path-internal
+      cmd: echo "${image-dev-repo-path}" > .bob/var.image-repo-path-internal
+    - task: image-full-name-internal
+      cmd: echo "${image-registry}/${image-dev-repo-path}/${docker-image-name}" > .bob/var.image-full-name-internal
+    - task: k8-namespace
+      cmd: echo "${k8-namespace}-${env.USER}" > .bob/var.k8-namespace
+    - task: helm-chart-repo-internal
+      cmd: echo "${helm-chart-repo-server}/${helm-chart-dev-repo-path}" > .bob/var.helm-chart-repo-internal
+    - task: helm-image-dr-vm-args
+      cmd: echo " -DhelmDesignRule.config.drHc001=skip -DimageDesignRule.config.DrD470203050a=skip -DhelmDesignRule.config.DR-D1121-064=skip" > .bob/var.helm-image-dr-vm-args
+    - task: get-branch
+      docker-image: adp-release-auto
+      cmd: git rev-parse --abbrev-ref HEAD > .bob/var.branch
+    - task: save-run-type
+      cmd: echo "dev" > .bob/var.run-type
+    - task: set-pri_params
+      cmd: echo "${pri-param}" > .bob/var.pri_params
+    - task: set-fossa-id
+      cmd: uuidgen -r > .bob/var.fossa-id
+    - rule: generate-npm-token
+
+  init-precodereview:
+    - task: version
+      docker-image: adp-release-auto
+      cmd:
+        - version-handler generate
+          --is-release false
+          --output version
+          --git-repo-path .
+          --version-prefix-file "VERSION_PREFIX"
+        - sed -e 's@-.*$@@' .bob/var.version > .bob/var.semver
+        - sed -e 's/\..*$//' .bob/var.version > .bob/var.doc-version
+    - task: k8-namespace
+      cmd: echo "${k8-namespace}" > .bob/var.k8-namespace
+    - task: rstate
+      docker-image: adp-release-auto
+      cmd: get_rstate.py ${var.version} > .bob/var.rstate
+    - task: commit
+      docker-image: adp-release-auto
+      cmd: git rev-parse --short HEAD > .bob/var.commithash
+    - task: image-repo-path-internal
+      cmd: echo "${image-ci-repo-path}" > .bob/var.image-repo-path-internal
+    - task: image-full-name-internal
+      cmd: echo "${image-registry}/${image-ci-repo-path}/${docker-image-name}" > .bob/var.image-full-name-internal
+    - task: helm-chart-repo-internal
+      cmd: echo "${helm-chart-repo-server}/${helm-chart-ci-repo-path}" > .bob/var.helm-chart-repo-internal
+    - task: set-upload
+      cmd: echo "--debug" > .bob/var.pri_params
+    - task: helm-image-dr-vm-args
+      cmd: echo " -DhelmDesignRule.config.drHc001=skip -DimageDesignRule.config.DrD470203050a=skip -DhelmDesignRule.config.DR-D1121-064=skip" > .bob/var.helm-image-dr-vm-args
+    - task: get-branch
+      docker-image: adp-release-auto
+      cmd: git rev-parse --abbrev-ref HEAD > .bob/var.branch
+    - task: save-run-type
+      cmd: echo "precodereview" > .bob/var.run-type
+    - task: set-pri_params
+      cmd: echo "${pri-param}" > .bob/var.pri_params
+    - task: set-fossa-id
+      cmd: uuidgen -r > .bob/var.fossa-id
+    - rule: generate-npm-token
+
+  init-drop:
+    - task: version
+      docker-image: adp-release-auto
+      cmd:
+        - version-handler generate
+          --is-release true
+          --output version
+          --git-repo-path .
+          --version-prefix-file "VERSION_PREFIX"
+        - sed -e 's@-.*$@@' .bob/var.version > .bob/var.semver
+        - sed -e 's/\..*$//' .bob/var.version > .bob/var.doc-version
+    - task: k8-namespace
+      cmd: echo "${k8-namespace}" > .bob/var.k8-namespace
+    - task: rstate
+      docker-image: adp-release-auto
+      cmd: get_rstate.py ${var.version} > .bob/var.rstate
+    - task: commit
+      docker-image: adp-release-auto
+      cmd: git rev-parse --short HEAD > .bob/var.commithash
+    - task: image-repo-path-internal
+      cmd: echo "${image-ci-repo-path}" > .bob/var.image-repo-path-internal
+    - task: image-full-name-internal
+      cmd: echo "${image-registry}/${image-ci-repo-path}/${docker-image-name}" > .bob/var.image-full-name-internal
+    - task: helm-chart-repo-internal
+      cmd: echo "${helm-chart-repo-server}/${helm-chart-ci-repo-path}" > .bob/var.helm-chart-repo-internal
+    - task: set-upload
+      cmd: echo "--debug --upload" > .bob/var.pri_params
+    - task: adp-artifacts-properties
+      docker-image: adp-release-auto
+      cmd: generate-adp-artifacts
+        --chart-name ${helm-chart-name}
+        --chart-version ${var.version}
+        --chart-repo ${helm-chart-drop-repo}
+    - task: get-branch
+      docker-image: adp-release-auto
+      cmd: git rev-parse --abbrev-ref HEAD > .bob/var.branch
+    - task: save-run-type
+      cmd: echo "drop" > .bob/var.run-type
+    - task: set-pri_params
+      cmd: echo "${pri-param}" > .bob/var.pri_params
+    - task: set-fossa-id
+      cmd: uuidgen -r > .bob/var.fossa-id
+    - rule: generate-npm-token
+
+  k8-cluster-prepare:
+    - task: create-namespace
+      docker-image: k8-test
+      docker-flags:
+        - "--network=host"
+        - "--env KUBECONFIG=${env.KUBECONFIG}"
+        - "--volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro"
+      cmd: "kubectl create namespace ${k8-namespace}"
+    - task: create-pull-secret
+      docker-image: k8-test
+      docker-flags:
+        - "--network=host"
+        - "--env KUBECONFIG=${env.KUBECONFIG}"
+        - "--volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro"
+      cmd: "kubectl create secret docker-registry arm-pullsecret \
+        --docker-server=armdocker.rnd.ericsson.se \
+        --docker-username=${env.DOCKER_USERNAME} \
+        --docker-password=${env.DOCKER_PASSWORD} \
+        --namespace ${k8-namespace}"
+
+  # ----------- Publish task
+  publish:
+    - task: package-helm-public
+      docker-image: adp-release-auto
+      docker-flags:
+        - "--env ENABLE_HELM_V3=true"
+      cmd: helm-package
+        --folder charts/${helm-chart-name}
+        --workdir .bob
+        --output build
+        --version ${var.version}
+        --replace eric-product-info.yaml:VERSION=${var.version}
+        --replace RSTATE=${var.rstate}
+        --replace eric-product-info.yaml:REPO_PATH=${image-drop-repo-path}
+        --replace eric-product-info.yaml:IMAGE_NAME=${docker-image-name}
+    - task: image-pull-internal
+      cmd: docker pull ${var.image-full-name-internal}:${var.version}
+    - task: image-tag-public
+      cmd: docker tag ${var.image-full-name-internal}:${var.version} ${image-full-name}:${var.version}
+    - task: image-push-public
+      cmd: docker push ${image-full-name}:${var.version}
+    - task: git-tag
+      cmd:
+        - git tag -a v${var.version} -m "Release ${var.version} from ${docker-image-name}"
+        - git push origin v${var.version}
+    - task: helm-upload
+      docker-image: adp-release-auto
+      cmd: upload_file.sh
+        --filename=build/${helm-chart-file-name}
+        --repository=${helm-chart-drop-repo}/${helm-chart-name}
+        --api-token=${env.API_TOKEN}
+    - rule: publish-docs
+
+  # **************
+  #
+  # 3PP/PLMS TASKS
+  #
+  # **************
+
+  foss-name-mapping:
+    - task: get-name-mapping
+      docker-image: adp-release-auto
+      cmd: cp /usr/share/foss/resources/bazaar_name_map.csv .bob/bazaar_name_map.csv
+    - task: check-component-name-differences
+      docker-image: ci-toolbox
+      cmd: different-bazaar-names.js
+        --dependencies-path ${auto-dependency-file-name}
+        --map-file .bob/bazaar_name_map.csv
+
+  foss-helper:
+    - task: check-dependencies-file-is-changed
+      cmd: git diff HEAD^ -- ${auto-dependency-file-name} ${manual-dependency-file-name} | wc -l
+    - task: check-all-prim-number-filled
+      cmd: >
+        exit $(grep "prim: ''" ${auto-dependency-file-name} ${manual-dependency-file-name} | wc -l)
+    - task: check-dependencies-files
+      docker-image: adp-release-auto
+      cmd: dependencies validate
+        -d ${manual-dependency-file-name}
+        -d ${auto-dependency-file-name}
+        --allow-esw4
+    - task: dependency-update-with-bazaar
+      docker-image: adp-release-auto
+      cmd:
+        - dependencies update
+          --dependencies ${auto-dependency-file-name}
+          --scan-bazaar
+          --sort
+          --allow-esw4
+          -bzru ${env.BAZAAR_USER}
+          -bzrt ${env.BAZAAR_TOKEN}
+    - task: dependency-update-with-bazaar-manual
+      docker-image: adp-release-auto
+      cmd:
+        - dependencies update
+          --dependencies ${manual-dependency-file-name}
+          --scan-bazaar
+          --sort
+          --allow-esw4
+          -bzru ${env.BAZAAR_USER}
+          -bzrt ${env.BAZAAR_TOKEN}
+    - task: merge-dependencies
+      docker-image: adp-release-auto
+      cmd: dependencies merge
+        -d ${manual-dependency-file-name}
+        -d ${auto-dependency-file-name}
+        -o ${dependency-full-file-name}
+        --sort
+    - task: check-munin-sync-status
+      docker-image: adp-release-auto
+      cmd:
+        - rm -rf ${munin-sync-status-directory}
+        - mkdir -p ${munin-sync-status-directory}
+        - munin search-foss
+          -t ${env.MUNIN_TOKEN}
+          -d ${dependency-full-file-name}
+          -o ${munin-sync-status-directory}
+    - task: generate-dependencies-report
+      docker-image: adp-release-auto
+      cmd:
+        - mkdir -p ${report-directory}
+        - dependencies report
+          -d ${dependency-full-file-name}
+          -out ${dependencies-report-html}
+    - task: fix-format
+      docker-image: adp-release-auto
+      cmd: dependencies merge
+        -d ${auto-dependency-file-name}
+        -d plms/scripts/empty_dependency.yaml
+        -o ${auto-dependency-file-name}
+        --sort
+    - task: fix-format-manual
+      docker-image: adp-release-auto
+      cmd: dependencies merge
+        -d ${manual-dependency-file-name}
+        -d plms/scripts/empty_dependency.yaml
+        -o ${manual-dependency-file-name}
+        --sort
+    - task: update-munin-section
+      docker-image: adp-release-auto
+      cmd:
+        - mkdir -p ${munin-sync-status-directory}
+        - munin search-foss
+          -t ${env.MUNIN_TOKEN}
+          -d ${auto-dependency-file-name}
+          -o ${munin-sync-status-directory}
+    - task: update-munin-section-manual
+      docker-image: adp-release-auto
+      cmd:
+        - mkdir -p ${munin-sync-status-directory}
+        - munin search-foss
+          -t ${env.MUNIN_TOKEN}
+          -d ${manual-dependency-file-name}
+          -o ${munin-sync-status-directory}
+    - task: delete-munin-version
+      docker-image: adp-release-auto
+      cmd:
+        - munin delete-versions
+          -t ${env.MUNIN_TOKEN}
+          -c ${product-structure}
+          -v ${var.version}
+          --set PRIDOC="${pri-doc-number}/${var.doc-version}"
+    - task: migrate-dependencies
+      docker-image: adp-release-auto
+      cmd:
+        - dependencies migrate -d ${auto-dependency-file-name}
+        - dependencies migrate -d ${manual-dependency-file-name}
+
+  foss-analyze:
+    - task: analyze
+      docker-image: nodejs-builder
+      docker-flags:
+        - "--env FOSSA_API_KEY=${env.FOSSA_API_KEY}"
+      cmd:
+        - fossa analyze
+          --revision ${var.fossa-id}
+          --project ${fossa-project-name}
+          --endpoint ${fossa-server-endpoint}
+          --branch ${var.branch}
+          --team ${fossa-team-name}
+    - task: status-check
+      docker-image: adp-release-auto
+      docker-flags:
+        - "--env FOSSA_API_KEY=${env.FOSSA_API_KEY}"
+      cmd: fossa_scan_status_check -s ${fossa-server-endpoint} -f custom -p ${fossa-project-name} -r ${var.fossa-id} -t ${env.FOSSA_API_KEY} -dl 15
+    - task: report-attribution
+      docker-image: nodejs-builder
+      docker-flags:
+        - "--env FOSSA_API_KEY=${env.FOSSA_API_KEY}"
+      cmd: fossa report attribution
+        --endpoint ${fossa-server-endpoint}
+        --project ${fossa-project-name}
+        --revision ${var.fossa-id} --json > ${fossa-report-name}
+    - task: dependency-update-with-foss
+      docker-image: adp-release-auto
+      cmd: dependencies update
+        --fossa-report ${fossa-report-name}
+        --dependencies ${auto-dependency-file-name}
+        --sort
+        --allow-esw4
+    - task: skip-blocked-3pps
+      docker-image: nodejs-builder
+      cmd: node plms/scripts/skip-dependencies.js ${auto-dependency-file-name} plms/dependencies_blocked_by_fossa.yaml
+    - task: fix-primary
+      docker-image: nodejs-builder
+      cmd: node plms/scripts/fix-primary-from-package.js
+        ${auto-dependency-file-name}
+        backend/package.json
+        frontend/package.json
+    - task: fix-linking
+      docker-image: nodejs-builder
+      cmd:
+        - node plms/scripts/fix-linking-from-package-lock.js
+          ${auto-dependency-file-name}
+          frontend/package-lock.json
+          Static
+        - node plms/scripts/fix-linking-from-package-lock.js
+          ${auto-dependency-file-name}
+          backend/package-lock.json
+          Dynamic
+    - task: enrich
+      docker-image: ci-toolbox
+      cmd: enrich.js
+        --dependencies-path ${auto-dependency-file-name}
+        --enrichment-path plms/dependencies_enrichment.yaml
+        --output-dependencies-path ${auto-dependency-file-name}
+    - task: foss-helper:fix-format
+
+  foss-register-help:
+    - task: filter-unregistered
+      docker-image: nodejs-builder
+      cmd:
+        - mkdir -p .bob/plms
+        - node plms/scripts/filter-unregistered.js
+          ${auto-dependency-file-name}
+          .bob/plms/dependencies_foss_unregistered.yaml
+        - node plms/scripts/change-name.js
+          .bob/plms/dependencies_foss_unregistered.yaml
+          bazaar
+    - task: dependency-update-with-bazaar-for-unregistered
+      docker-image: adp-release-auto
+      cmd: >
+        dependencies update
+        --dependencies .bob/plms/dependencies_foss_unregistered.yaml
+        --scan-bazaar
+        --sort
+        --allow-esw4
+        -bzru ${env.BAZAAR_USER}
+        -bzrt ${env.BAZAAR_TOKEN}
+        || true
+    - task: rename-unregistered
+      docker-image: nodejs-builder
+      cmd:
+        - node plms/scripts/change-name.js
+          .bob/plms/dependencies_foss_unregistered.yaml
+          fossa
+    - task: merge-unregistered
+      docker-image: adp-release-auto
+      cmd: dependencies merge
+        -d .bob/plms/dependencies_foss_unregistered.yaml
+        -d ${auto-dependency-file-name}
+        -o ${auto-dependency-file-name}
+        --sort
+    - task: fill-missing-bazaar-src
+      docker-image: nodejs-builder
+      cmd:
+        - node plms/scripts/fill-missing-bazaar-src.js
+          ${auto-dependency-file-name}
+    - task: fix-license-stako-src
+      docker-image: ci-toolbox
+      cmd: fix-stako-license.js
+        --dependencies-path ${auto-dependency-file-name}
+        --output-dependencies-path ${auto-dependency-file-name}
+    - task: foss-helper:fix-format
+    - task: foss-helper:update-munin-section
+    - task: foss-helper:check-dependencies-files
+
+  foss-analyze-local:
+    - rule: clean
+    - rule: init-dev
+    - rule: foss-analyze
+    - rule: foss-register-help
+
+  munin:
+    - task: generate-documents-revision-list
+      docker-image: adp-release-auto
+      docker-flags:
+        - --env ERIDOC_USERNAME="${env.ERIDOC_USERNAME}"
+        - --env ERIDOC_PASSWORD="${env.ERIDOC_PASSWORD}"
+      cmd: munin-doc search
+        -c ${product-structure}
+        -docs ${generated-document-list}
+        -pi ${generated-document-list-for-pri}
+        -v ${var.semver}
+        --set PRIDOC="${pri-doc-number}/${var.doc-version}"
+    - task: validate-product-structure
+      docker-image: adp-release-auto
+      cmd: munin validate
+        -ps ${product-structure}
+        --set PRIDOC="${pri-doc-number}/${var.doc-version}"
+    - task: skip-blocked-3pps
+      docker-image: nodejs-builder
+      cmd: node plms/scripts/skip-dependencies.js ${dependency-full-file-name} plms/dependencies_blocked_by_mimer.yaml
+    - task: create-version
+      docker-image: adp-release-auto
+      cmd: munin create-versions
+        -t ${env.MUNIN_TOKEN}
+        -c ${product-structure}
+        -v ${var.version}
+        --set PRIDOC="${pri-doc-number}/${var.doc-version}"
+
+  license-agreement:
+    - task: generate
+      docker-image: adp-release-auto
+      cmd: license-agreement generate
+        --dependencies ${dependency-full-file-name}
+        --fossa-report ${fossa-report-name}
+        --license-agreement ${manual-license-agreement-file-name}
+        --output ${license-agreement-path}
+    - task: validate
+      docker-image: adp-release-auto
+      cmd: license-agreement validate
+        --license-agreement ${license-agreement-path}
+
+  # WARNING: RUN ONLY MANUALLY THIS RULE
+  bazaar-register:
+    - task: bazaar-request
+      docker-image: adp-release-auto
+      cmd: dependencies register
+        --dependencies ${auto-dependency-file-name}
+        --bazaar
+        --mimer
+        --bazaar-user ${env.BAZAAR_USER}
+        --bazaar-token ${env.BAZAAR_TOKEN}
+        --bazaar-svl ${bazaar-svl-id}
+
+  # Check if eridoc_config.yaml is OK
+  eridoc-dryrun:
+    - task: dryrun
+      docker-image: adp-release-auto
+      docker-flags:
+        - --env ERIDOC_USERNAME="${env.ERIDOC_USERNAME}"
+        - --env ERIDOC_PASSWORD="${env.ERIDOC_PASSWORD}"
+      cmd:
+        - eridoc upload --config ./docs/release/config/eridoc/release-dpi-documents.yaml --debug --no-validate-certificates --set semver=${var.semver} --dry-run
+        - eridoc upload --config ./docs/release/config/eridoc/release-test-documents.yaml --debug --no-validate-certificates --set semver=${var.semver} --dry-run
+  # Upload eridoc documents to Eridoc
+  eridoc-upload:
+    - task: eridoc-upload
+      docker-image: adp-release-auto
+      docker-flags:
+        - --env ERIDOC_USERNAME="${env.ERIDOC_USERNAME}"
+        - --env ERIDOC_PASSWORD="${env.ERIDOC_PASSWORD}"
+      cmd:
+        - eridoc upload --config ./docs/release/config/eridoc/release-dpi-documents.yaml --debug --no-validate-certificates --set semver=${var.semver}
+        - eridoc upload --config ./docs/release/config/eridoc/release-test-documents.yaml --debug --no-validate-certificates --set semver=${var.semver}
+  # Approve uploaded documents in Eridoc
+  eridoc-approve:
+    - task: eridoc-approve
+      docker-image: adp-release-auto
+      docker-flags:
+        - --env ERIDOC_USERNAME="${env.ERIDOC_USERNAME}"
+        - --env ERIDOC_PASSWORD="${env.ERIDOC_PASSWORD}"
+      cmd:
+        - eridoc approve --config ./docs/release/config/eridoc/release-dpi-documents.yaml --debug --no-validate-certificates
+        - eridoc approve --config ./docs/release/config/eridoc/release-test-documents.yaml --debug --no-validate-certificates

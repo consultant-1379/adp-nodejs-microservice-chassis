@@ -1,0 +1,17 @@
+ingress:
+  enabled: true
+  useContour: true
+  hostname:
+  path:
+  ingressClass: EEA-Applications
+  adpIccrServiceName: eric-eea-ingress-ctrl-common
+
+configuration:
+  logging:
+    syslog:
+      enabled: false
+  faultIndications:
+    enabled: false
+
+metrics:
+  enabled: false

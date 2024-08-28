@@ -1,0 +1,18 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "generateMarkdown": "node src/generateMarkdown.js --generate",
+    "validateExamples": "node src/generateMarkdown.js --validate-schema-examples"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://gerrit.ericsson.se:29418/EEA/adp-ui-service"
+  },
+  "devDependencies": {
+    "openapi-examples-validator": "^4.6.0",
+    "widdershins": "^4.0.1"
+  }
+}

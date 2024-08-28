@@ -1,0 +1,159 @@
+openapi: "3.0.2"
+info:
+  title: User Interface Simple Backend API Documentation
+  description: |
+    ```
+      Ericsson   |   DocNo <DOC NUMBER>   |   Rev PA1   |   Interwork Description
+    ```
+    # Introduction
+    This document describes the User Interface Simple Backend REST API.
+  version: "1.0.0-alpha"
+servers:
+  - url: /api
+    description: Base
+paths:
+  /tickets:
+    get:
+      summary: Gets all tickets.
+      operationId: getTicketList
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ticket"
+  /ticket:
+    post:
+      summary: Creates a new ticket.
+      operationId: createTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/ui.ticket.post.requestBody.yaml"
+            example:
+              title: "Dummy ticket"
+              description: "Ticket for example"
+      responses:
+        200:
+          description: OK
+        400:
+          description: Title or description is incorrect
+          content:
+            text/html:
+              schema:
+                type: string
+                default: "Title or description is incorrect"
+  /ticket/{id}:
+    get:
+      summary: Gets a ticket by ID.
+      operationId: getTicket
+      parameters:
+        - name: id
+          in: path
+          description: Ticket ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "../schemas/ui.ticket.response.yaml"
+              example:
+                id: "TKT-001"
+                title: "Dummy ticket"
+                description: "Ticket for example"
+                dateCreated: 1643886903251
+        404:
+          description: Ticket id does not exist
+          content:
+            text/html:
+              schema:
+                type: string
+                default: "Ticket id does not exist"
+    put:
+      summary: Updates ticket by ID.
+      operationId: updateTicket
+      parameters:
+        - name: id
+          in: path
+          description: Ticket ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../schemas/ui.ticket.put.requestBody.yaml"
+            example:
+              title: "Dummy ticket"
+              description: "Ticket for example"
+              dateCreated: 1643886903251
+      responses:
+        200:
+          description: OK
+        404:
+          description: Ticket ID does not exist
+          content:
+            text/html:
+              schema:
+                type: string
+                default: "Ticket id does not exist"
+        400:
+          description: Title or description is incorrect
+          content:
+            text/html:
+              schema:
+                type: string
+                default: "Title or description is incorrect"
+    delete:
+      summary: Removes ticket by ID.
+      operationId: deleteTicket
+      parameters:
+        - name: id
+          in: path
+          description: Ticket ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+        404:
+          description: Ticket id does not exist
+          content:
+            text/html:
+              schema:
+                type: string
+                default: "Ticket id does not exist"
+components:
+  schemas:
+    Ticket:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - dateCreated
+      properties:
+        id:
+          type: string
+          description: Unique identification of the ticket.
+        title:
+          type: string
+          description: Ticket title.
+        description:
+          type: string
+          description: Full description of the task.
+        dateCreated:
+          type: integer
+          description: The number of milliseconds elapsed since January 1, 1970.

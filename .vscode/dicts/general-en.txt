@@ -1,0 +1,35 @@
+/* cSpell:disable */
+/* Note: if you modify this file VSCode have to be reloaded */
+
+/* General */
+syslog
+semver
+istqb
+RBAC
+Grype
+
+/* Ericsson realted */
+rstate
+selidocker
+lmera
+EEAEPP
+Jira
+munin
+mimer
+eridoc
+PLMS
+
+/* 3pp tools */
+Kubernetes
+artifactory
+mochawesome
+junit
+kubectl
+Minikube
+wdio
+
+/* Bob related */
+Dhelm
+kubehelmbuilder
+KUBECONFIG
+cicd

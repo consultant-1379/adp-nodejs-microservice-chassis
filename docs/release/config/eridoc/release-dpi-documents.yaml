@@ -1,0 +1,30 @@
+repository: eridoca
+folderId: 0b004cffc943bc30
+documents:
+  - file: ../../../../build/doc-archive/pdf/api-documentation/aggregated-api-specs.pdf
+    title: "Interface Description"
+    decimal-class: "15519"
+    individual-number: "CAF 101 171/1"
+    eri_document_type: "Interface Description"
+    class-prefix: "1"
+    format: "pdf"
+    lang: "en"
+    eri_doc_responsible: "BDGSBEWP"
+  - file: ../../../../build/doc-archive/pdf/service-user-guide/service_user_guide.pdf
+    title: "Service User Guide"
+    decimal-class: "1553"
+    individual-number: "APR 201 0333/1"
+    eri_document_type: "User Guide"
+    class-prefix: "1"
+    format: "pdf"
+    lang: "en"
+    eri_doc_responsible: "BDGSBEWP"
+  - file: ../../../../build/doc-archive/pdf/application-developers-guide/application_developers_guide.pdf
+    title: "Application Developers Guide"
+    decimal-class: "19817"
+    individual-number: "APR 201 0333/1"
+    eri_document_type: "User Guide"
+    class-prefix: "1"
+    format: "pdf"
+    lang: "en"
+    eri_doc_responsible: "BDGSBEWP"

@@ -1,0 +1,202 @@
+global:
+  security:
+    tls:
+      enabled: true
+  ericsson:
+    licensing:
+      licenseDomains:
+        - productType: Expert_Analytics
+          swltId: STB-Expert_Analytics-1
+          customerId: 800141
+
+#NEED FOR TLS
+eric-sec-sip-tls:
+  enabled: true
+
+eric-log-transformer:
+  enabled: false
+  config:
+    adpJson:
+      transformation:
+        enabled: true
+  searchengine:
+    logplaneConfig:
+      - field: "[facility]"
+        value: "log audit"
+        newLogplane: "eric-adp-chassis-auditlog"
+  syslog:
+    syslogLogplane: "eric-adp-nodejs-chassis-service"
+  service:
+    endpoints:
+      syslogIn:
+        tls:
+          enforced: required
+
+eric-data-search-engine:
+  data:
+    storageAllocation: 1Gi
+  persistence:
+    storageClass: ""
+  service:
+    endpoints:
+      rest:
+        tls:
+          verifyClientCertificate: optional
+
+#NEED FOR TLS
+eric-data-distributed-coordinator-ed:
+  pods:
+    dced:
+      replicas: 1
+  persistence:
+    persistentVolumeClaim:
+      storageClassName: ""
+
+eric-sec-key-management:
+  persistence:
+    type: pvc
+    pvc:
+      storageClassName: ""
+
+eric-pm-server:
+  enabled: false
+  rbac:
+    appMonitoring:
+      configFileCreate: true
+      enabled: true
+  server:
+    persistentVolume:
+      enabled: true
+      size: 1Gi
+      storageClass: ""
+
+# IAM
+eric-data-document-database-iam:
+  enabled: false
+  postgresDatabase: iam
+  credentials:
+    kubernetesSecretName: eric-eea-iam-pg-usersecrets
+
+# Fault Handling Service
+eric-data-document-database-fault-handling:
+  enabled: false
+  backend:
+    dbname: chassis
+  postgresDatabase: chassis
+  credentials:
+    kubernetesSecretName: eric-eea-iam-pg-usersecrets
+
+eric-sec-access-mgmt:
+  enabled: false
+  authenticationProxy:
+    enabled: true
+    lastlogintimeEnabled: true
+    cookieDomain: nip.io
+    logoutpageEnabled: true
+    ingress:
+      enabled: true
+      hostname: # authn.iam.ci.chassis.<iccr-lb-ip-address>.nip.io
+      existingTlsSecret: eric-adp-nodejs-chassis-service-ingress-external-server-cert
+      ingressClass: EEA-Applications
+      caCertificateSecret: eric-eea-ingress-ctrl-common-client-ca
+  ingress:
+    enabled: true
+    hostname: # iam.ci.chassis.<iccr-lb-ip-address>.nip.io
+    ingressClass: EEA-Applications
+    caCertificateSecret: eric-eea-ingress-ctrl-common-client-ca
+    tls:
+      enabled: true
+      passthrough: false
+      existingSecret: eric-adp-nodejs-chassis-service-ingress-external-server-cert
+  statefulset:
+    adminSecret: eric-eea-iam-pg-usersecrets
+  persistence:
+    dbsecret: eric-eea-iam-pg-usersecrets
+    dbUserkey: custom-user
+    dbPasswdkey: custom-pwd
+    dbName: iam
+    dbHost: eric-data-document-database-iam
+  service:
+    endpoints:
+      iam:
+        tls:
+          verifyClientCertificate: optional
+      authenticationproxy:
+        tls:
+          verifyClientCertificate: optional
+  tls:
+    client:
+      pg:
+        issuer: eric-data-document-database-iam-client-ca
+
+eric-fh-alarm-handler:
+  enabled: false
+  service:
+    endpoints:
+      restapi:
+        tls:
+          enforced: required
+          verifyClientCertificate: optional
+  alarmhandler:
+    configmap:
+      faultmappings: eric-adp-nodejs-chassis-service-faultmappings-configmap
+    rest:
+      fi:
+        api:
+          enabled: true
+  credentials:
+    kubernetesSecretName: eric-eea-iam-pg-usersecrets
+  backend:
+    dbname: chassis
+    hostname: eric-data-document-database-fault-handling
+
+eric-data-message-bus-kf:
+  enabled: false
+  service:
+    endpoints:
+      messagebuskf:
+        tls:
+          enforced: required
+
+eric-lm-combined-server-db:
+  enabled: false
+  persistence:
+    size: 1Gi
+  credentials:
+    kubernetesSecretName: eric-lm-combined-server-db-secret
+  postgresDatabase: licensemanager_db
+
+eric-lm-combined-server:
+  enabled: false
+  database:
+    host: eric-lm-combined-server-db
+    port: 5432
+    name: licensemanager_db
+    credentials:
+      secretName: eric-lm-combined-server-db-secret
+  licenseServerClient:
+    licenseServer:
+      thrift:
+        host: 10.221.14.90
+
+eric-eea-ingress-ctrl-applications:
+  enabled: true
+  fullnameOverride: eric-eea-ingress-ctrl-applications
+  rbac:
+    create: true
+  service:
+    externalTrafficPolicy: Local
+    annotations:
+      sharedVIPLabel: null
+      addressPoolName: pool0
+      cloudProviderLB: null
+  ingressClass: EEA-Applications
+  clientCertificate:
+    enabled: true
+    secret: eric-eea-ingress-ctrl-applications-internal-client-cert
+  resources:
+    contour:
+      limits:
+        cpu: 150m # 75m delivered by ms
+  metrics:
+    enabled: false

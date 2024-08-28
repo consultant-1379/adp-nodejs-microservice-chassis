@@ -1,0 +1,16 @@
+documents:
+  - name: "Service User Guide"
+    filepath: build/doc-archive/html/service-user-guide.zip
+    default: true
+  - name: "Release Notes"
+    filepath: build/doc-archive/html/release-notes.zip
+  - name: "API Documentation"
+    filepath: build/doc-archive/html/api-documentation.zip
+  - name: "Application Developers Guide"
+    filepath: build/doc-archive/html/application-developers-guide.zip
+  - name: "Test Specification"
+    filepath: build/doc-archive/html/test-specification.zip
+  - name: "Service Overview"
+    filepath: build/doc-archive/html/overview.zip
+  - name: "Service Deployment Guide"
+    filepath: build/doc-archive/html/service-deployment-guide.zip

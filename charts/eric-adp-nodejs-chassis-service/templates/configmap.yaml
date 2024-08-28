@@ -1,0 +1,63 @@
+{{- $global := fromJson (include "eric-adp-nodejs-chassis-service.global" .) -}}
+{{- $ingressPath := include "eric-adp-nodejs-chassis-service.ingressPath" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "eric-adp-nodejs-chassis-service.name" . }}-configmap
+  labels:
+{{- include "eric-adp-nodejs-chassis-service.labels" . | nindent 4 }}
+  annotations:
+{{- include "eric-adp-nodejs-chassis-service.annotations" . | nindent 4 }}
+data:
+  backend-service-config.json: |
+    {
+        "logging": {
+          "enabled": {{ .Values.configuration.logging.enabled }},
+          "defaultLogLevel": "{{ .Values.configuration.logging.defaultLogLevel }}",
+          "serviceName": "{{ .Values.configuration.logging.serviceName }}",
+          "stdout": {
+            "enabled": {{ .Values.configuration.logging.stdout.enabled }}
+          },
+          "filelog": {
+            "enabled": {{ .Values.configuration.logging.filelog.enabled }}
+          },
+          "syslog": {
+            "enabled": {{ .Values.configuration.logging.syslog.enabled }},
+            "syslogHost": "{{ .Values.configuration.logging.syslog.syslogHost }}",
+            "syslogFacility": "{{ .Values.configuration.logging.syslog.syslogFacility }}"
+          }
+        },
+        "faultIndications": {
+          "enabled": {{ .Values.configuration.faultIndications.enabled }}
+        },
+        "ingressPath": "{{ $ingressPath }}",
+        "useHttps": {{ $global.security.tls.enabled }},
+        "verifyClientCertificate": "{{ .Values.service.endpoints.http.tls.verifyClientCertificate }}",
+        "enforcedTLS": "{{ .Values.service.endpoints.http.tls.enforced }}",
+        "serviceName": "{{ include "eric-adp-nodejs-chassis-service.name" . }}",
+        "dependencies": {
+          "logtransformer": {
+            "enabled": {{ .Values.configuration.logging.syslog.enabled }}
+          },
+          "prometheus": {
+            "enabled": {{ .Values.metrics.enabled }},
+            "appName": "{{ .Values.configuration.dependencies.prometheus.appName }}"
+          },
+          "faultHandler": {
+            "enabled": {{ .Values.configuration.faultIndications.enabled }},
+            "hostname": "{{ .Values.configuration.dependencies.faultHandler.hostname }}",
+            "tlsPort": {{ .Values.configuration.dependencies.faultHandler.tlsPort }},
+            "httpPort": {{ .Values.configuration.dependencies.faultHandler.httpPort }},
+            "serviceName": "{{ .Values.configuration.dependencies.faultHandler.serviceName }}"
+          }
+        }
+    }
+
+  frontend-config.json: |
+    {
+      "logging": {
+          "logLevel":  "{{ .Values.uiconfig.logging.logLevel }}"
+      },
+      "logoutURL": {{ include "eric-adp-nodejs-chassis-service.logoutURL" . | quote }},
+      "userAccountURL": {{ include "eric-adp-nodejs-chassis-service.userAccountURL" . | quote }}
+    }

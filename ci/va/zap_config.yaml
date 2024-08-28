@@ -1,0 +1,21 @@
+zapConfig:
+  baseUrl: "http://eric-adp-nodejs-chassis-service-http:3000"
+  scanType: "api"
+  config_dir: "zap/config"
+  globalConfig:
+  endpoints:
+    - name: "ui"
+      url: "/"
+      config:
+    - name: "api"
+      url: "/api/"
+      config:
+  report:
+    dir: ".bob/reports/zap"
+    format:
+      - html
+      - json
+      - md
+      - xml
+  properties:
+    zap_container_port: 9625

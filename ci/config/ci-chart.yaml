@@ -1,0 +1,47 @@
+# CI Chart values to turn on every dependency.
+# It can be used as a template to create a local dev-env.
+# NOTE: For local dev-env use the minimum set of required dependencies to spare shared resources.
+
+# ---- MTLS - Security
+global:
+  security:
+    tls:
+      enabled: true
+
+eric-sec-sip-tls:
+  enabled: true
+
+# ---- Log Transformer - Logging
+eric-log-transformer:
+  enabled: true
+
+# ---- Performance Measurement Server (Prometheus)
+eric-pm-server:
+  enabled: true
+
+# ---- IAM - Authentication and Authorization
+eric-data-document-database-iam:
+  enabled: true
+
+# Determine the IP address of the ICCR to set up the proper nip.io addresses:
+# kubectl get svc -n <namespace> | grep LoadBalancer
+# update signum with your signum, and IP to ICCR IP
+eric-sec-access-mgmt:
+  enabled: true
+  authenticationProxy:
+    ingress:
+      hostname: auth.iam.<signum>.chassis.<IP>.nip.io # update
+  ingress:
+    hostname: iam.<signum>.chassis.<IP>.nip.io # update
+
+# ---- Fault Handling
+# FM alarm handler requires the list of fault mappings as a config map. Chassis Provides a fault map, but if the CI chart is deployed on its own
+# then set it to an empty config map.
+eric-fh-alarm-handler:
+  enabled: true
+  alarmhandler:
+    configmap:
+      faultmappings: empty-faultmappings-configmap # Overridden. If Chassis is deployed, this can be removed.
+
+eric-data-document-database-fault-handling:
+  enabled: true

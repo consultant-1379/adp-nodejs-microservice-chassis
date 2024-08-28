@@ -1,0 +1,19 @@
+type: object
+required:
+  - id
+  - title
+  - description
+  - dateCreated
+properties:
+  id:
+    type: string
+    description: Unique identification of the ticket.
+  title:
+    type: string
+    description: Ticket title.
+  description:
+    type: string
+    description: Full description of the task.
+  dateCreated:
+    type: integer
+    description: The number of milliseconds elapsed since January 1, 1970.

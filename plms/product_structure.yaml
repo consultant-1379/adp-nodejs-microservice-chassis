@@ -1,0 +1,136 @@
+modelVersion: '2.0'
+flavor: 'ADP 2.0'
+service:
+  name: 'ADP NodeJS Chassis Service'
+  design_countries:
+    - HU
+  sw_compilation_country: SE
+  release_responsible: BDGSBEWC
+  design_responsible: BDGSBEWM
+  fossUsageStatus: 'InWork'
+  encryptionStatus: 'InWork'
+  documents:
+    import: ../.bob/documents.yaml
+  top_product:
+    number: APR 201 0333
+    description: 'An example product for demonstration purposes in EEA.'
+    alias:
+      - eric-adp-nodejs-chassis-service
+      - NodeJS Chassis
+      - adp-nodejs-microservice-chassis
+    # Included documents and products
+    # If the order is changed in this file, then should be changed in the release ruleset.yaml too
+    includes:
+      # PRI
+      - eridoc: ##PRIDOC##
+        step_strategy: generate
+      # Service User Guide
+      - eridoc: 1/1553-APR 201 0333/1
+        step_strategy: highest revision letter
+      # App Developer Guide
+      - eridoc: 1/198 17-APR 201 0333/1
+        step_strategy: highest revision letter
+      # Risk Assessment
+      - eridoc: 1/006 64-APR 201 0333/1
+        step_strategy: highest revision letter
+      # Vulnerability Analysis Report
+      - eridoc: 1/1597-APR 201 0333/1
+        step_strategy: highest revision letter
+      # Test Specification
+      - eridoc: 1/152 41-APR 201 0333/1
+        step_strategy: highest revision letter
+      # Test Report
+      - eridoc: 1/152 83-APR 201 0333/1
+        step_strategy: highest ordinal number
+      # Secure Coding Report
+      - eridoc: 1/0360-APR 201 0333/1
+        step_strategy: highest revision letter
+  src_products:
+    - label: EEA Test MS Interface
+      description: Interface to EEA Test MS
+      number: CAF 101 171
+      includes:
+        # Interface Description
+        - eridoc: 1/155 19-CAF 101 171/1
+          step_strategy: highest revision letter
+      alias:
+        - eric-adp-nodejs-chassis-service
+        - NodeJS Chassis
+        - adp-nodejs-microservice-chassis
+      trade:
+        eu_eccn: NA
+        us_eccn: EAR99
+        aec: '0'
+        eccn_motivation: sw resource unit
+    - label: EEA Test MS Source
+      description: Source to EEA Test MS
+      number: CAV 101 0075
+      provides:
+        # API
+        - munin: CAF 101 171
+      alias:
+        - eric-adp-nodejs-chassis-service
+        - NodeJS Chassis
+        - adp-nodejs-microservice-chassis
+      trade:
+        eu_eccn: NA
+        us_eccn: EAR99
+        aec: '0'
+        eccn_motivation: sw resource unit
+  derivative_products:
+    # Label describing the product, must be unique per list item
+    - label: ADP Nodejs Chassis Helm
+      description: Helm to ADP Nodejs Chassis (APR 201 0333)
+      number: CXD 101 203
+      alias:
+        - eric-adp-nodejs-chassis-service
+        - NodeJS Chassis
+        - adp-nodejs-microservice-chassis
+      derivedFrom:
+        # Source code
+        munin: CAV 101 0075
+      includes:
+        # Authorization Proxy OAuth2 image
+        - munin: CXU 101 0038
+          version: 1.21.0
+          secondPartyProduct: 'True'
+        # Authorization Proxy OAuth2 SAP image
+        - munin: CXU 101 0039
+          version: 1.21.0
+          secondPartyProduct: 'True'
+      trade:
+        eu_eccn: NA
+        us_eccn: EAR99
+        aec: '0'
+        eccn_motivation: config file without encryption
+    - label: ADP Nodejs Chassis Image
+      description: Image to ADP Nodejs Chassis (APR2010333)
+      number: CXU 101 1172
+      alias:
+        - eric-adp-nodejs-chassis-service
+        - NodeJS Chassis
+        - adp-nodejs-microservice-chassis
+      includes:
+        # Common Base OS
+        - munin: CXC 201 2032
+          version: 6.0.0
+          secondPartyProduct: 'True'
+        # EUI SDK
+        # To get the PRIM and RSTATE for a given version: https://web.yammer.com/main/groups/eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIxMjgzNDE3MSJ9/all
+        - prim: CNA 403 3599
+          rstate: R2B
+      derivedFrom:
+        # Source code
+        munin: CAV 101 0075
+      uses_foss:
+        - dependencies_file: ../.bob/dependency_merged_full.yaml
+      uses_encryption:
+        - import: encryptions.yaml
+      trade:
+        eu_eccn: NA
+        us_eccn: EAR99
+        aec: '0'
+        eccn_motivation: does not possess any characteristics or functionality specified
+          in the EU Control list of Dual Use Items. It falls under the jurisdiction
+          of the US Department of Commerce but is not controlled since it falls under
+          OAM definition.

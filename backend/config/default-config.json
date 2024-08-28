@@ -1,0 +1,89 @@
+{
+  "configQueryProtocolAnnotation": "ui.ericsson.com/protocol",
+  "configQueryPortAnnotation": "ui.ericsson.com/port",
+  "uiContentConfigContextAnnotation": "ui.ericsson.com/config-context",
+  "appNameLabel": "app.kubernetes.io/name",
+  "appVersionLabel": "app.kubernetes.io/version",
+  "logging": {
+    "enabled": true,
+    "defaultLogLevel": "info",
+    "serviceName": "eric-adp-chassis",
+    "stdout": {
+      "enabled": true
+    },
+    "filelog": {
+      "enabled": false
+    },
+    "syslog": {
+      "enabled": false,
+      "syslogHost": "eric-log-transformer",
+      "syslogFacility": "local0"
+    }
+  },
+  "faultIndications": {
+    "enabled": true
+  },
+  "loggingLicenses": {
+    "enabled": true
+  },
+  "ingressHost": "localhost",
+  "ingressPort": "80",
+  "ingressPath": "/",
+  "useHttps": false,
+  "verifyClientCertificate": "optional",
+  "enforcedTLS": "required",
+  "serviceName": "eric-adp-nodejs-chassis-service",
+  "dependencies": {
+    "logtransformer": {
+      "enabled": true,
+      "tls": {
+        "verifyServerCert": true,
+        "sendClientCert": true
+      }
+    },
+    "prometheus": {
+      "enabled": true,
+      "appName": "eric-adp-chassis",
+      "endpointsToCountRequests": ["/api/ticket", "/api/tickets"],
+      "tls": {
+        "verifyServerCert": false,
+        "sendClientCert": false
+      }
+    },
+    "faultHandler": {
+      "enabled": false,
+      "tls": {
+        "verifyServerCert": true,
+        "sendClientCert": true
+      },
+      "hostname": "eric-fh-alarm-handler",
+      "tlsPort": 6006,
+      "httpPort": 6005,
+      "serviceName": "eric-adp-nodejs-chassis-service"
+    },
+    "licenseManager": {
+      "enabled": false,
+      "tlsPort": 18326,
+      "httpPort": 8080,
+      "hostname": "eric-lm-combined-server",
+      "productType": "Expert_Analytics",
+      "licenses": [
+        {
+          "keyId": "FAT1024238/1",
+          "type": "CAPACITY_CUMULATIVE"
+        }
+      ],
+      "tls": {
+        "verifyServerCert": true,
+        "sendClientCert": true
+      }
+    },
+    "httpClient": {
+      "enabled": true,
+      "tls": {
+        "verifyServerCert": true,
+        "sendClientCert": true
+      }
+    }
+  }
+}

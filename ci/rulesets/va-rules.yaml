@@ -1,0 +1,113 @@
+modelVersion: 2.0
+import:
+  common: ../../ruleset2.0.yaml
+  va-scan-functions: va-scan-functions.yaml
+
+properties:
+  - zap-config: ci/va/zap_config.yaml
+  - va-mitigation-config: ci/va/va-mitigation-config.yaml
+  - nmap-config: ci/va/nmap-config.yaml
+  - helm-chart-released-repo: https://arm.seli.gic.ericsson.se/artifactory/proj-eea-released-helm
+
+env:
+  - KUBECONFIG (default=notset)
+  - HELM_VERSION (default=notset)
+  - ARM_API_USER (default=notset)
+  - ARM_API_TOKEN (default=notset)
+
+var:
+  - last-released-version
+  - selected-version
+
+rules:
+  init:
+    - task: download-last-released-chart
+      docker-image: common.k8-test
+      cmd: helm pull ${common.helm-chart-name}
+        --repo ${helm-chart-released-repo}
+        --username ${env.ARM_API_USER}
+        --password ${env.ARM_API_TOKEN}
+        --destination .bob
+    - task: get-last-released-version
+      cmd: ls .bob | grep -oP '(\d?[\.+]){3}\d+' > .bob/var.last-released-version
+    - task: get-selected-version
+      cmd:
+        - echo ${var.last-released-version} | tr + - > .bob/var.selected-version
+        - if [[ "${env.HELM_VERSION}" != "notset" ]]; then echo ${env.HELM_VERSION} | tr + - > .bob/var.selected-version; fi
+
+  deploy-chart:
+    - rule: common.k8-cluster-prepare
+    - task: helm-default-drop-deploy
+      docker-image: common.k8-test
+      docker-flags:
+        - --network=host
+        - --env KUBECONFIG=${env.KUBECONFIG}
+        - --volume ${env.KUBECONFIG}:${env.KUBECONFIG}:ro
+      cmd: helm install eric-adp-nodejs-chassis-service ${common.helm-chart-name}
+        --wait
+        --repo ${common.helm-chart-repo-server}/${common.helm-chart-ci-repo-path}
+        --username ${env.ARM_API_USER}
+        --password ${env.ARM_API_TOKEN}
+        --version ${var.selected-version}
+        --set global.pullSecret=arm-pullsecret
+        --set configuration.logging.syslogEnabled=false
+        --namespace=${common.k8-namespace}
+
+  anchore-scan:
+    - rule: va-scan-functions.anchore-scan
+      properties:
+        - version: ${var.selected-version}
+        - helm-chart-name: ${common.helm-chart-name}
+        - image-name: ${common.docker-image-name}
+
+  fetch-xray-report:
+    - rule: va-scan-functions.xray-report
+      properties:
+        - version: ${var.selected-version}
+        - helm-chart-name: ${common.helm-chart-name}
+        - image-name: ${common.docker-image-name}
+
+  trivy-scan:
+    - rule: va-scan-functions.trivy-scan
+      properties:
+        - version: ${var.selected-version}
+        - helm-chart-name: ${common.helm-chart-name}
+        - image-name: ${common.docker-image-name}
+
+  cleanup:
+    - rule: va-scan-functions.cleanup
+    - task: delete-self-fetched-images
+      cmd:
+        - docker image rm -f ${common.image-internal-name}:${var.selected-version}
+
+  zap-scan:
+    - rule: va-scan-functions.zap-scan
+      properties:
+        - k8-namespace: ${common.k8-namespace}
+        - zap-config-path: ${zap-config}
+
+  nmap-scan:
+    - rule: va-scan-functions.nmap-scan
+      properties:
+        - k8-namespace: ${common.k8-namespace}
+        - nmap-config-path: ${nmap-config}
+
+  generate-upload-VA-report:
+    - rule: va-scan-functions.generate-upload-VA-report
+      properties:
+        - mitigation-config-path: ${va-mitigation-config}
+        - version: ${var.selected-version}
+        - helm-chart-name: ${common.helm-chart-name}
+
+  upload-reports-to-arm:
+    - rule: va-scan-functions.publish-reports-to-arm
+      properties:
+        - helm-chart-name: ${common.helm-chart-name}
+        - version: ${var.selected-version}
+
+  upload-va-report-to-eridoc:
+    - rule: va-scan-functions.publish-va-report-to-eridoc
+      properties:
+        - eridoc-config-path: ./docs/release/config/eridoc/release-security-documents.yaml
+        - version: ${var.selected-version}
+        - helm-chart-name: ${common.helm-chart-name}

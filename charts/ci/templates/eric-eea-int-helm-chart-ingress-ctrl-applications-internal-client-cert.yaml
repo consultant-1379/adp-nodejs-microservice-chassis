@@ -1,0 +1,18 @@
+{{- if (index .Values "eric-eea-ingress-ctrl-applications" "enabled") }}
+apiVersion: siptls.sec.ericsson.com/v1
+kind: InternalCertificate
+metadata:
+  name: ingress-ctrl-applications-internal-client-cert
+spec:
+  kubernetes:
+    generatedSecretName: eric-eea-ingress-ctrl-applications-internal-client-cert
+    secretType: tls
+  certificate:
+    subject:
+      cn: eric-eea-ingress-ctrl-applications
+    issuer:
+      reference: ingress-ctrl-common-client-ca
+    extendedKeyUsage:
+      tlsClientAuth: true
+      tlsServerAuth: false
+{{- end }}

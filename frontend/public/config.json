@@ -1,0 +1,18 @@
+{
+  "apps": [
+    {
+      "name": "microservice-chassis-app",
+      "module": "microservice-chassis-app",
+      "displayName": "Microservice Chassis",
+      "type": "euisdk",
+      "route": "microservice-chassis-app"
+    }
+  ],
+  "components": [
+    {
+      "name": "chassis-component",
+      "module": "chassis-component",
+      "version": "1.0.0"
+    }
+  ]
+}

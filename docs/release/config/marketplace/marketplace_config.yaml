@@ -1,0 +1,25 @@
+documents:
+  - name: service-user-guide
+    files:
+      - ./../../content/service_user_guide.md
+  - name: inner-source-readme
+    files:
+      - ./../../../../README.md
+  - name: application-developers-guide
+    files:
+      - ./../../content/application_developers_guide.md
+  - name: test-specification
+    files:
+      - ./../../content/test-specification.md
+  - name: release-notes
+    files:
+      - ./../../content/release_notes.md
+  - name: api-documentation
+    files:
+      - ../../../api/aggregated-api-specs.md
+  - name: overview
+    files:
+      - ./../../content/overview.md
+  - name: service-deployment-guide
+    files:
+      - ./../../content/service_deployment_guide.md

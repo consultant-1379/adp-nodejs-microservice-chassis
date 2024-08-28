@@ -1,0 +1,24 @@
+{{- $authorizationProxy := fromJson (include "eric-adp-nodejs-chassis-service.authz-proxy-values" .) -}}
+{{- if $authorizationProxy.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "eric-adp-nodejs-chassis-service.authz-proxy-service-name" . }}
+  labels:
+    {{- $authProxyLabels := include "eric-adp-nodejs-chassis-service.authz-proxy-labels" . | fromYaml -}}
+    {{- $commonLabels := include "eric-adp-nodejs-chassis-service.labels" . | fromYaml -}}
+    {{- include "eric-adp-nodejs-chassis-service.mergeLabels" (dict "location" .Template.Name "sources" (list $authProxyLabels $commonLabels)) | trim | nindent 4 }}
+  annotations:
+    {{- /* APO2 metrics */ -}}
+    {{- $prometheusAnn := include "eric-adp-nodejs-chassis-service.authz-proxy-prometheus-annotations" . | fromYaml -}}
+    {{- $authProxyAnn := include "eric-adp-nodejs-chassis-service.authz-proxy-service-annotations" . | fromYaml -}}
+    {{- $commonAnn := include "eric-adp-nodejs-chassis-service.annotations" . | fromYaml -}}
+    {{- include "eric-adp-nodejs-chassis-service.mergeAnnotations" (dict "location" .Template.Name "sources" (list $authProxyAnn $commonAnn $prometheusAnn)) | trim | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+{{ include "eric-adp-nodejs-chassis-service.authz-proxy-service-port" . | indent 4 }}
+  selector:
+    app.kubernetes.io/name: {{ include "eric-adp-nodejs-chassis-service.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}

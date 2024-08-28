@@ -1,0 +1,16 @@
+{
+  "internal": {
+    "prefix": "/internal",
+    "routes": {
+      "config": "/uiConfig"
+    }
+  },
+  "api": {
+    "prefix": "/api",
+    "routes": {
+      "ticket": "/ticket",
+      "tickets": "/tickets",
+      "helloworld": "/helloworld"
+    }
+  }
+}

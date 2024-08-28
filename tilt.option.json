@@ -1,0 +1,43 @@
+{
+  "mode": "local",
+  "exactnamespace": "",
+  "dockerRegistries": {
+    "armdocker": {
+      "url": "armdocker.rnd.ericsson.se",
+      "path": "proj-eea-dev",
+      "secretName": "arm-pullsecret",
+      "username": "DOCKER_USERNAME",
+      "password": "DOCKER_PASSWORD"
+    },
+    "serodocker": {
+      "url": "serodocker.sero.gic.ericsson.se",
+      "secretName": "sero-pullsecret",
+      "username": "SERODOCKER_USERNAME",
+      "password": "SERODOCKER_PASSWORD"
+    }
+  },
+  "namespace_prefix": "dev",
+  "kubecontext": "kubernetes-admin@dev-presentation",
+  "isCiChartDeployed": false,
+  "deployIam": false,
+  "deployFm": false,
+  "deployPm": false,
+  "deployLogTransformer": false,
+  "deployMainService": true,
+  "deployIccr": true,
+  "ingressEnabled": true,
+  "ingressHost": "localhost",
+  "ingressPath": "/",
+  "ingressEnableTLS": false,
+  "ingressUseContour": true,
+  "ingressClass": "EEA-Applications",
+  "adpIccrServiceName": "eric-eea-ingress-ctrl-common",
+  "mTLS": false,
+  "verifyClientCertificate": "required",
+  "authzProxy": false,
+  "syslogEnabled": false,
+  "faultIndicationsEnabled": false,
+  "replicaCount": 1,
+  "logLevel": "info",
+  "logLicenses": false
+}
